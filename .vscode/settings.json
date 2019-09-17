@@ -1,0 +1,6 @@
+{
+        "C_Cpp.errorSquiggles": "Disabled",
+        "files.associations": {
+                "esp_bt.h": "c"
+        }
+}
