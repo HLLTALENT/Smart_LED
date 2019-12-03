@@ -22,6 +22,7 @@
 #include "Json_parse.h"
 
 wifi_config_t s_staconf;
+uint8_t wifi_status;
 
 enum wifi_connect_sta
 {
@@ -38,7 +39,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
         break;
     case SYSTEM_EVENT_STA_GOT_IP:
         xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
-        if (work_status != WORK_INIT)
+        /*if (work_status != WORK_INIT)
         {
             if ((work_status == WORK_WALLKEY) || (work_status == WORK_HAND))
             {
@@ -48,16 +49,17 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
             {
                 Led_Status = LED_STA_LOCAL;
             }
-        }
+        }*/
+
         //Led_Status=LED_STA_INIT;
         break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
         esp_wifi_connect();
         xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
-        if (start_read_blue_ret == BLU_RESULT_SUCCESS) //在全功能版本时闪烁故障灯
+        /*if (start_read_blue_ret == BLU_RESULT_SUCCESS) //在全功能版本时闪烁故障灯
         {
             Led_Status = LED_STA_WIFIERR;
-        }
+        }*/
         break;
     default:
         break;
@@ -150,9 +152,13 @@ void init_wifi(void)
         ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &s_staconf));
         ESP_ERROR_CHECK(esp_wifi_start());
         esp_wifi_connect();
+        wifi_status = 1;
+
+        //Led_G_On();
     }
     else
     {
+        //Led_B_On();
         printf("Waiting for ble connect info ....\r\n");
     }
 }

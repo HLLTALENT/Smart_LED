@@ -16,10 +16,13 @@ Localcalculation(2017,3,2,8,45,121.6,38.9,-120,8,0,11,30,13,10,18,0,&Height,&Ang
 #ifndef _LOCALCALCULATION_H_
 #define _LOCALCALCULATION_H_
 
-void Localcalculation(int year,int month,int day,int hour,int minute,float lon,float lat,float orientation,
-                      int T1_h,int T1_m,int T2_h,int T2_m,int T3_h,int T3_m,int T4_h,int T4_m,
-                      int* Height,int* Angle);
+float u;
+uint64_t Z;  //新的占空比
+uint64_t Z1; //新的占空比
+float Y;
 
+extern float lightX;
+
+extern void Localcalculation(float lightX, uint16_t color_temp, int fade_time);
 
 #endif
-

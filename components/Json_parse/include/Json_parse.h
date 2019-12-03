@@ -22,35 +22,35 @@ esp_err_t creat_object(void);
 #define WORK_PROTECT 0X07    //风速和结霜保护
 #define WORK_FIREINIT 0X08   //开机就火灾
 #define WORK_FIRE 0x09       //火灾保护状态
+#define WORK_WALLKEYOFF 0X10
 
 #define PROTECT_ON 0X01  //当前有风速等平台保护状态
 #define PROTECT_OFF 0X00 //当前无风速等平台保护状态
 
-#define MAX_AUTO_CTL_TIME (2 * 60)     //平台php不发送高角值，切本地计算时间5min
+#define MAX_AUTO_CTL_TIME (10 * 60)    //平台php不发送高角值，切本地计算时间10min
 #define MAX_WALLKEY_TIME (8 * 60 * 60) //8h 墙壁开关控制回自动控制
 // #define MAX_WALLKEY_TIME (5 * 60) //
 
 struct
 {
-    int8_t mqtt_angle;
-    char mqtt_angle_char[8];
-    int8_t mqtt_height;
-    char mqtt_height_char[8];
-    char mqtt_mode[8];
+    float mqtt_Y;
 
-    int8_t mqtt_angle_adj;  //用于手动控制解析改变角度取值-1/+1
-    int8_t mqtt_height_adj; //用于手动控制解析改变高度取值-1/+1
+    //int8_t mqtt_light;
+    char mqtt_light_char[8];
+    //int8_t mqtt_human;
+    char mqtt_human_char[8];
+
+    char mqtt_mode[8];
+    char mqtt_mode_char[8];
+
+    char mqtt_control_char[8];
+
+    int8_t mqtt_illumination_adj; //用于手动控制解析改变角度取值-1/+1
+    //int8_t mqtt_light_adj;        //用于手动控制解析改变高度取值-1/+1
 
     int mqtt_last;
+    char mqtt_ota_url[128];
 
-    int mqtt_sun_condition;
-    char mqtt_sun_condition_char[2];
-    int mqtt_wind_protection;
-    char mqtt_wind_protection_char[2];
-    int mqtt_frost_protection;
-    char mqtt_frost_protection_char[2];
-    int mqtt_fire_alarm;
-    char mqtt_fire_alarm_char[2];
     char mqtt_stage[8];
     char mqtt_command_id[32];
     char mqtt_string[256];
@@ -66,8 +66,8 @@ struct
 
 struct
 {
-    int http_angle;
-    int http_height;
+    int http_illumination;
+    int http_light;
     int http_mode;
     int http_sun_condition;
     char http_time[24];
@@ -132,6 +132,7 @@ enum
 uint8_t work_status;    //当前工作状态
 uint8_t protect_status; //保护状态，用于火灾和风速混合保护的切换
 
-int auto_ctl_count; //自动控制指令计数，收到平台的自动控制指令后该变量清零，在定时器中每1s+1，加到180S（3min）后，进入本地计算
+int auto_ctl_count;
+int auto_ctl_count1; //自动控制指令计数，收到平台的自动控制指令后该变量清零，在定时器中每1s+1，加到180S（3min）后，进入本地计算
 
 #endif

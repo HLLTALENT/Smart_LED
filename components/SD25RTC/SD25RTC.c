@@ -16,6 +16,7 @@ uint8_t RtcReadDate(uint8_t *time_dat);
 void RtcDisplay(void);
 
 S_Time DSRTC = {0x00};
+int year, month, day, hour, min, sec;
 
 uint8_t RtcWriteOneByte(uint8_t addr, uint8_t dat) //rtc写一个字节
 {
@@ -27,7 +28,7 @@ uint8_t RtcWriteOneByte(uint8_t addr, uint8_t dat) //rtc写一个字节
     i2c_master_write_byte(cmd, dat, ACK_CHECK_EN);
     i2c_master_stop(cmd);
 
-    ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, 1000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(I2C_MASTER_NUM1, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
     if (ret == ESP_OK)
     {
@@ -65,7 +66,7 @@ uint8_t RtcReadMulByte(uint8_t addr, uint8_t len, uint8_t *dat) //rtc读取多�
 
     i2c_master_stop(cmd);
 
-    ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, 1000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(I2C_MASTER_NUM1, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
     if (ret == ESP_OK)
     {
@@ -94,7 +95,7 @@ uint8_t RtcWriteMulByte(uint8_t addr, uint8_t len, uint8_t *dat) //RTC写入多�
 
     i2c_master_stop(cmd);
 
-    ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, 1000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(I2C_MASTER_NUM1, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
     if (ret == ESP_OK)
     {
@@ -150,7 +151,7 @@ uint8_t RtcReadDate(uint8_t *time_dat)
 
     i2c_master_stop(cmd);
 
-    ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, 1000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(I2C_MASTER_NUM1, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
 
     /*psRTC->second=time_dat[0];
@@ -202,7 +203,7 @@ uint8_t RtcWriteDate(S_Time *psRTC) //设置时间应全部写入，不能单独
 
     i2c_master_stop(cmd);
 
-    ret = i2c_master_cmd_begin(I2C_MASTER_NUM, cmd, 1000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(I2C_MASTER_NUM1, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
 
     WriteOff();
@@ -251,7 +252,9 @@ void sd25rtc_init(void)
     //RtcWriteMulByte(0x30,8,Sram);//将8位ID写入0x30开始的用户存储区
     RtcWriteOneByte(0x18, 0x82); //打开充电
     WriteOff();
-    //printf("rtc write=%d\n",RtcWriteDate(&DSRTC));//设置时间
+    // S_Time SETRTC = {0x00, 0x47, 0x14, 0x01, 0x14, 0x10, 0x19};
+    //       00秒 17分 10时 周3 10日   7月 19年
+    //printf("rtc write=%d\n", RtcWriteDate(&SETRTC)); //设置时间
     RtcReadDate(read_dat); //读取时间
 
     DSRTC.second = read_dat[0];
@@ -274,7 +277,7 @@ void sd25rtc_init(void)
     RtcDisplay(); //打印时间
 
     //开机将SD25时间设置为系统时间
-    int year, month, day, hour, min, sec;
+    //int year, month, day, hour, min, sec;
     uint8_t temp;
 
     temp = DSRTC.year >> 4;
@@ -316,62 +319,18 @@ void sd25rtc_init(void)
     Rtc_Set(year, month, day, hour, min, sec);
 }
 
-void SD25Rtc_Read(int *year, int *month, int *day, int *hour, int *min, int *sec)
+void SD25RTC_IIC_Init(void)
 {
-    uint8_t temp;
-    uint8_t read_dat[10];
-    RtcReadDate(read_dat); //读取时间
-
-    DSRTC.second = read_dat[0];
-    DSRTC.minute = read_dat[1];
-    DSRTC.hour = read_dat[2];
-    DSRTC.hour = DSRTC.hour & 0x3f;
-    DSRTC.week = read_dat[3];
-    DSRTC.day = read_dat[4];
-    DSRTC.month = read_dat[5];
-    DSRTC.year = read_dat[6];
-
-    temp = DSRTC.year >> 4;
-    temp = temp & 0x0f;
-    DSRTC.year = DSRTC.year & 0x0f;
-    *year = 2000 + temp * 10 + DSRTC.year;
-    printf("rtc year=%d\n", (int)year);
-
-    temp = DSRTC.month >> 4;
-    temp = temp & 0x0f;
-    DSRTC.month = DSRTC.month & 0x0f;
-    *month = temp * 10 + DSRTC.month;
-    printf("rtc month=%d\n", (int)month);
-
-    temp = DSRTC.day >> 4;
-    temp = temp & 0x0f;
-    DSRTC.day = DSRTC.day & 0x0f;
-    *day = temp * 10 + DSRTC.day;
-    printf("rtc day=%d\n", (int)day);
-
-    temp = DSRTC.hour >> 4;
-    temp = temp & 0x0f;
-    DSRTC.hour = DSRTC.hour & 0x0f;
-    *hour = temp * 10 + DSRTC.hour;
-    printf("rtc hour=%d\n", (int)hour);
-
-    temp = DSRTC.minute >> 4;
-    temp = temp & 0x0f;
-    DSRTC.minute = DSRTC.minute & 0x0f;
-    *min = temp * 10 + DSRTC.minute;
-    printf("rtc min=%d\n", (int)min);
-
-    temp = DSRTC.second >> 4;
-    temp = temp & 0x0f;
-    DSRTC.second = DSRTC.second & 0x0f;
-    *sec = temp * 10 + DSRTC.second;
-    printf("rtc sec=%d\n", (int)sec);
-
-    // *year = (1900 + p->tm_year);
-    // *month = (1 + p->tm_mon);
-    // *day = p->tm_mday;
-    // *hour = p->tm_hour;
-    // *min = p->tm_min;
-    // *sec = p->tm_sec;
-    //ESP_LOGI(TAG, "Read:%d-%d-%d %d:%d:%d No.%d",(1900+p->tm_year),(1+p->tm_mon),p->tm_mday,p->tm_hour,p->tm_min,p->tm_sec,(1+p->tm_yday));
+    int i2c_master_port = I2C_MASTER_NUM1;
+    i2c_config_t conf;
+    conf.mode = I2C_MODE_MASTER;
+    conf.sda_io_num = I2C_MASTER_SDA2_IO;
+    conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+    conf.scl_io_num = I2C_MASTER_SCL2_IO;
+    conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+    conf.master.clk_speed = I2C_MASTER_FREQ_HZ;
+    i2c_param_config(i2c_master_port, &conf);
+    i2c_driver_install(i2c_master_port, conf.mode,
+                       I2C_MASTER_RX2_BUF_DISABLE,
+                       I2C_MASTER_TX2_BUF_DISABLE, 0);
 }

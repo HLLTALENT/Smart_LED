@@ -12,9 +12,9 @@ static const int ESPTOUCH_DONE_BIT = BIT1;
 
 EventGroupHandle_t wifi_event_group;
 
-#define WIFISTATUS_CONNET       0X01
-#define WIFISTATUS_DISCONNET    0X00
+#define WIFISTATUS_CONNET 0X01
+#define WIFISTATUS_DISCONNET 0X00
 uint8_t WifiStatus;
-
+uint8_t wifi_status;
 
 #endif

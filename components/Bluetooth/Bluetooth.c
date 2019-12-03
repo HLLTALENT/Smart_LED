@@ -374,6 +374,11 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
 
         bzero(BleName, sizeof(BleName));
         sprintf(BleName, "%s%s", "ILS-", SerialNum);
+        /* char BleName_N[10];
+        bzero(BleName_N, sizeof(BleName_N));
+        bzero(BleName, sizeof(BleName));
+        strncpy(BleName_N, SerialNum, 5);
+        snprintf(BleName, sizeof(BleName), "%s%s", "Intlite-IT1-", BleName_N);*/
         esp_err_t set_dev_name_ret = esp_ble_gap_set_device_name(BleName);
         if (set_dev_name_ret)
         {
@@ -507,7 +512,7 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
                     E2prom_BluWrite(0x00, (uint8_t *)zerobuf, 512); //清空蓝牙数据
                     E2prom_BluWrite(0x00, (uint8_t *)buf, param->write.len);
                     Ble_mes_status = BLEOK;
-                    Ble_need_restart = 1;
+                    //Ble_need_restart = 1;
                 }
             }
         }

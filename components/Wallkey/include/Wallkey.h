@@ -16,36 +16,39 @@ WallKey应用函数，给入Key_Id(蓝牙发送过来的)和方向左0右1
 
 */
 #include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 #ifndef _WALLKEY_H_
 #define _WALLKEY_H_
 
 //双控按键左上
-#define KEY_DOU_LEFT_UP 0X01
+//#define KEY_DOU_LEFT_UP 0X01
 //双控按键左下
-#define KEY_DOU_LEFT_DOWN 0X02
+//#define KEY_DOU_LEFT_DOWN 0X02
 //双控按键右上
-#define KEY_DOU_RIGHT_UP 0X10
+//#define KEY_DOU_RIGHT_UP 0X10
 //双控按键右下
-#define KEY_DOU_RIGHT_DOWN 0X20
+//#define KEY_DOU_RIGHT_DOWN 0X20
 //按键抬起
-#define KEY_RELEASE 0X00
+//#define KEY_RELEASE 0X00
 
 //单控按键上
-#define KEY_SIN_UP 0X01
+//#define KEY_SIN_UP 0X01
 //单控按键下
-#define KEY_SIN_DOWN 0X02
+//#define KEY_SIN_DOWN 0X02
 //单控同时按
-#define KEY_SIN_DOU 0X03
+//#define KEY_SIN_DOU 0X03
 
-//#define WallKeyStop         0x00
-#define WallKeyUpStart 0x01
-#define WallKeyDownStart 0x02
-#define WallKeyUpStop 0x03
-#define WallKeyDownStop 0x04
-#define WallKeyWait 0x05
+//单控按键按下
+#define KEY_SIN 0X04
+#define KEY_SIN_RELEASE 0x00
+
+//uint8_t key_read;
 
 extern void Wallkey_Init(void);
+extern int8_t Wallkey_Read(uint8_t *Key_Id, int8_t Switch);
 extern void Wallkey_App(uint8_t *Key_Id, int8_t Switch);
-extern uint8_t WallKeyCtl_Status; //墙壁开关状态，上开始，下开始，停止
+
+TaskHandle_t Wallkey_Read_Handle;
 
 #endif

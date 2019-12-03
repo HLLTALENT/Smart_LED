@@ -13,10 +13,14 @@
 #include "Smartconfig.h"
 #include "E2prom.h"
 #include "Http.h"
-#include "Motorctl.h"
-#include "Wind.h"
+#include "Human.h"
+#include "Pwm.h"
+
 #include "Bluetooth.h"
 #include "Led.h"
+#include "ota.h"
+
+extern uint8_t human_status;
 
 typedef enum
 {
@@ -332,6 +336,7 @@ esp_err_t parse_objects_http_active(char *http_json_data)
         //char *json_print;
 
         printf("start_parse_active_http_json\r\n");
+        //printf("http_json_data[0]= %d\r\n",http_json_data[0]);
 
         if (http_json_data[0] != '{')
         {
@@ -433,8 +438,8 @@ esp_err_t parse_objects_http_respond(char *http_json_data)
                                 ;
                                 E2prom_Write(0x20, data_write3, 16);
 
-                                fflush(stdout); //使stdout清空，就会立刻输出所有在缓冲区的内容。
-                                esp_restart();  //芯片复位 函数位于esp_system.h
+                                //fflush(stdout); //使stdout清空，就会立刻输出所有在缓冲区的内容。
+                                //esp_restart();  //芯片复位 函数位于esp_system.h
                         }
                 }
         }
@@ -495,8 +500,8 @@ esp_err_t parse_Uart0(char *json_data)
 
                 printf("{\"status\":0,\"code\": 0}");
                 cJSON_Delete(json_data_parse);
-                fflush(stdout); //使stdout清空，就会立刻输出所有在缓冲区的内容。
-                esp_restart();  //芯片复位 函数位于esp_system.h
+                //fflush(stdout); //使stdout清空，就会立刻输出所有在缓冲区的内容。
+                //esp_restart();  //芯片复位 函数位于esp_system.h
                 return 1;
         }
 }
@@ -538,268 +543,163 @@ esp_err_t parse_objects_heart(char *json_data)
 
 esp_err_t parse_objects_mqtt(char *mqtt_json_data)
 {
-        cJSON *json_data_parse = NULL;
-        cJSON *json_data_angle_parse = NULL;
-        cJSON *json_data_height_parse = NULL;
-        cJSON *json_data_mode_parse = NULL;
-        cJSON *json_data_sun_condition_parse = NULL;
-        cJSON *json_data_string_parse = NULL;
-        cJSON *json_data_command_id_parse = NULL;
-        cJSON *json_data_ctr_parse = NULL;
+    cJSON *json_data_parse = NULL;
+    
+    cJSON *json_data_mode_parse = NULL;
+    
+    cJSON *json_data_string_parse = NULL;
+    cJSON *json_data_command_id_parse = NULL;
+    //cJSON *json_data_control_parse = NULL;
+    
+    cJSON *json_data_stage_parse = NULL;
 
-        json_data_parse = cJSON_Parse(mqtt_json_data);
-        //printf("%s", cJSON_Print(json_data_parse));
+    cJSON *json_data_action = NULL;
+    cJSON *json_data_url = NULL;
+    cJSON *json_data_vesion = NULL;
+    cJSON *json_data_set_state = NULL;
 
-        if (mqtt_json_data[0] != '{')
-        {
-                printf("mqtt_json_data Json Formatting error\n");
+    json_data_parse = cJSON_Parse(mqtt_json_data);
+    //printf("%s", cJSON_Print(json_data_parse));
 
-                return 0;
-        }
+    if (mqtt_json_data[0] != '{')
+    {
+            printf("mqtt_json_data Json Formatting error\n");
 
-        if (json_data_parse == NULL) //如果数据包不为JSON则退出
-        {
+            return 0;
+    }
 
-                printf("Json Formatting error5\n");
+    if (json_data_parse == NULL) //如果数据包不为JSON则退出
+    {
 
-                cJSON_Delete(json_data_parse);
-                return 0;
-        }
+            printf("Json Formatting error5\n");
 
-        json_data_string_parse = cJSON_GetObjectItem(json_data_parse, "command_string");
+            cJSON_Delete(json_data_parse);
+            return 0;
+    }
+   /* if ((human_status == 1) && (strcmp(json_data_action->valuestring, "command") == 0))//有人则退出
+    {
+
+            printf("Json Formatting error6\n");
+
+            cJSON_Delete(json_data_parse);
+            return 0;
+    }*/
+
+    json_data_string_parse = cJSON_GetObjectItem(json_data_parse, "command_string");
+    if (json_data_string_parse != NULL)
+    {
+        json_data_command_id_parse = cJSON_GetObjectItem(json_data_parse, "command_id");
+        strncpy(mqtt_json_s.mqtt_command_id, json_data_command_id_parse->valuestring, strlen(json_data_command_id_parse->valuestring));
+        strncpy(mqtt_json_s.mqtt_string, json_data_string_parse->valuestring, strlen(json_data_string_parse->valuestring));
+        need_send = 1;
+        //printf("%s\r\n", cJSON_Print(json_data_string_parse));
+        json_data_string_parse = cJSON_Parse(json_data_string_parse->valuestring);
         if (json_data_string_parse != NULL)
         {
-                json_data_command_id_parse = cJSON_GetObjectItem(json_data_parse, "command_id");
-                strncpy(mqtt_json_s.mqtt_command_id, json_data_command_id_parse->valuestring, strlen(json_data_command_id_parse->valuestring));
-                strncpy(mqtt_json_s.mqtt_string, json_data_string_parse->valuestring, strlen(json_data_string_parse->valuestring));
-
                 //printf("%s\r\n", cJSON_Print(json_data_string_parse));
-                json_data_string_parse = cJSON_Parse(json_data_string_parse->valuestring);
-                if (json_data_string_parse != NULL)
+            if ((json_data_action = cJSON_GetObjectItem(json_data_string_parse, "action")) != NULL)
+            {
+                //如果命令是OTA
+                if (strcmp(json_data_action->valuestring, "ota") == 0)
                 {
-                        //printf("%s\r\n", cJSON_Print(json_data_string_parse));
-
-                        //收到自动模式指令或单独发送解除风速、结霜报警指令
-                        if ((json_data_mode_parse = cJSON_GetObjectItem(json_data_string_parse, "mode")) != NULL || (json_data_mode_parse = cJSON_GetObjectItem(json_data_string_parse, "frost_protection")) != NULL || (json_data_mode_parse = cJSON_GetObjectItem(json_data_string_parse, "wind_protection")) != NULL)
+                    printf("OTA命令进入\r\n");
+                    if ((json_data_vesion = cJSON_GetObjectItem(json_data_string_parse, "version")) != NULL &&
+                        (json_data_url = cJSON_GetObjectItem(json_data_string_parse, "url")) != NULL)
+                    {
+                        if (strcmp(json_data_vesion->valuestring, FIRMWARE) != 0) //与当前 版本号 对比
                         {
-                                auto_ctl_count = 0;
-                                if ((json_data_angle_parse = cJSON_GetObjectItem(json_data_string_parse, "angle")) != NULL)
-                                {
-                                        mqtt_json_s.mqtt_angle = json_data_angle_parse->valueint;
-                                        printf("angle %d \r\n", mqtt_json_s.mqtt_angle);
-                                }
-                                if ((json_data_height_parse = cJSON_GetObjectItem(json_data_string_parse, "height")) != NULL)
-                                {
-                                        mqtt_json_s.mqtt_height = json_data_height_parse->valueint;
-                                        printf("height %d \r\n", mqtt_json_s.mqtt_height);
-                                }
-
-                                if ((json_data_sun_condition_parse = cJSON_GetObjectItem(json_data_string_parse, "sun_condition")) != NULL)
-                                {
-                                        mqtt_json_s.mqtt_sun_condition = json_data_sun_condition_parse->valueint;
-                                        printf("sun_condition %d \r\n", mqtt_json_s.mqtt_sun_condition);
-                                }
-                                //收到风特殊保护状态时，则立即进入保护状态
-                                if ((json_data_sun_condition_parse = cJSON_GetObjectItem(json_data_string_parse, "wind_protection")) != NULL)
-                                {
-                                        mqtt_json_s.mqtt_wind_protection = json_data_sun_condition_parse->valueint;
-                                        printf("mqtt_wind_protection %d \r\n", mqtt_json_s.mqtt_wind_protection);
-                                }
-                                //收到霜特殊保护状态时，则立即进入保护状态
-                                if ((json_data_sun_condition_parse = cJSON_GetObjectItem(json_data_string_parse, "frost_protection")) != NULL)
-                                {
-                                        mqtt_json_s.mqtt_frost_protection = json_data_sun_condition_parse->valueint;
-                                        printf("mqtt_frost_protection %d \r\n", mqtt_json_s.mqtt_frost_protection);
-                                }
-
-                                if ((mqtt_json_s.mqtt_wind_protection == 1) || (mqtt_json_s.mqtt_frost_protection == 1))
-                                {
-                                        protect_status = PROTECT_ON;  //开启平台保护状态，用于火灾解除时的判断
-                                        if (work_status != WORK_FIRE) //在不是火警的情况下切保护
-                                        {
-                                                printf("WORK_PROTECT!!!\n");
-                                                work_status = WORK_PROTECT;
-                                                Led_Status = LED_STA_PROTECT;
-                                        }
-                                }
-                                //当收到解除风速、霜保护时，切换为自动控制
-                                else if ((mqtt_json_s.mqtt_wind_protection == 0) && (mqtt_json_s.mqtt_frost_protection == 0) && (mqtt_json_s.mqtt_fire_alarm == 0))
-                                {
-                                        protect_status = PROTECT_OFF; //关闭平台保护状态，用于火灾解除时的判断
-                                        if (work_status == WORK_PROTECT)
-                                        {
-                                                printf("REMOVE_WORK_PROTECT!!!\n");
-                                                work_status = WORK_AUTO;
-                                                Led_Status = LED_STA_AUTO;
-                                                http_send_mes(POST_NORMAL);
-                                        }
-                                }
-
-                                /*if ((json_data_sun_condition_parse = cJSON_GetObjectItem(json_data_string_parse, "fire_alarm")) != NULL)
-                {
-                    mqtt_json_s.mqtt_fire_alarm = json_data_sun_condition_parse->valueint;
-                    printf("mqtt_fire_alarm %d \r\n", mqtt_json_s.mqtt_fire_alarm);
-                }*/
-
-                                if ((json_data_mode_parse = cJSON_GetObjectItem(json_data_string_parse, "mode")) != NULL)
-                                {
-                                        if (strncmp("auto", json_data_mode_parse->valuestring, strlen("auto")) == 0)
-                                        {
-                                                printf("!!!!!!!!!!RECV AUTO CTL VALUE!!!!!!!!!!!!!!!!\n");
-
-                                                //判断当前如果是手动模式、墙壁开关控制模式时则记录该值，自动模式时则执行
-                                                if ((work_status == WORK_HAND) || (work_status == WORK_WALLKEY))
-                                                {
-                                                        printf("now is hand_ctl,auto_height=%d,auto_angle=%d\n", mqtt_json_s.mqtt_height, mqtt_json_s.mqtt_angle);
-                                                }
-                                                //当前是自动状态或本地计算状态则切换自动状态
-                                                else if ((work_status == WORK_AUTO) || (work_status == WORK_WAITLOCAL))
-                                                {
-                                                        work_status = WORK_AUTO;
-                                                        Led_Status = LED_STA_AUTO;
-                                                        strcpy(mqtt_json_s.mqtt_mode, "1");
-                                                        Motor_AutoCtl((int)mqtt_json_s.mqtt_height, (int)mqtt_json_s.mqtt_angle);
-                                                        //printf("send http\r\n");
-                                                        http_send_mes(POST_NORMAL);
-                                                }
-                                                //当前是需要保护状态立即发送一个全收指令更新平台
-                                                else if (work_status == WORK_PROTECT)
-                                                {
-                                                        strcpy(mqtt_json_s.mqtt_mode, "1");
-                                                        http_send_mes(POST_ALLUP);
-                                                        Motor_AutoCtl(0, 0);
-                                                        //Motor_AutoCtl((int)mqtt_json_s.mqtt_height, (int)mqtt_json_s.mqtt_angle);
-                                                }
-                                        }
-                                }
+                            strcpy(mqtt_json_s.mqtt_ota_url, json_data_url->valuestring);
+                            // E2prom_page_Write(ota_url_add, (uint8_t *)mqtt_json_s.mqtt_ota_url, 128);
+                            printf("OTA_URL=%s\r\n OTA_VERSION=%s\r\n", mqtt_json_s.mqtt_ota_url, json_data_vesion->valuestring);
+                            ota_start(); //启动OTA
                         }
-
-                        /********手动控制指令************************************************************************************************/
-                        if ((json_data_ctr_parse = cJSON_GetObjectItem(json_data_string_parse, "r")) != NULL) //手动角调整
+                        else
                         {
-                                if ((work_status != WORK_FIRE) && (work_status != WORK_PROTECT))
-                                {
-                                        if ((json_data_angle_parse = cJSON_GetObjectItem(json_data_string_parse, "last")) != NULL)
-                                        {
-                                                mqtt_json_s.mqtt_last = json_data_angle_parse->valueint;
-                                                printf("mqtt_last=%d\n", mqtt_json_s.mqtt_last);
-                                        }
-                                        work_status = WORK_HAND;
-                                        Led_Status = LED_STA_HAND;
-                                        strcpy(mqtt_json_s.mqtt_mode, "0"); //json上传模式改为0手动
-                                        mqtt_json_s.mqtt_angle_adj = json_data_ctr_parse->valueint;
-                                        if (mqtt_json_s.mqtt_angle_adj == 1)
-                                        {
-                                                //printf("send http\r\n");
-                                                http_send_mes(POST_ANGLE_ADD);
-                                                Motor_HandCtl_Angle(ADD);
-                                        }
-                                        else if (mqtt_json_s.mqtt_angle_adj == -1)
-                                        {
-                                                //printf("send http\r\n");
-                                                http_send_mes(POST_ANGLE_SUB);
-                                                Motor_HandCtl_Angle(SUB);
-                                        }
-                                        printf("mqtt_json_s.mqtt_angle_adj = %d \r\n", mqtt_json_s.mqtt_angle_adj);
-                                }
+                            printf("当前版本无需升级 \r\n");
                         }
-                        if ((json_data_ctr_parse = cJSON_GetObjectItem(json_data_string_parse, "h")) != NULL) //手动高调整
-                        {
-                                if ((work_status != WORK_FIRE) && (work_status != WORK_PROTECT))
-                                {
-                                        if ((json_data_angle_parse = cJSON_GetObjectItem(json_data_string_parse, "last")) != NULL)
-                                        {
-                                                mqtt_json_s.mqtt_last = json_data_angle_parse->valueint;
-                                                printf("mqtt_last=%d\n", mqtt_json_s.mqtt_last);
-                                        }
-                                        work_status = WORK_HAND;
-                                        Led_Status = LED_STA_HAND;
-                                        strcpy(mqtt_json_s.mqtt_mode, "0"); //json上传模式改为0手动
-                                        mqtt_json_s.mqtt_height_adj = json_data_ctr_parse->valueint;
-                                        if (mqtt_json_s.mqtt_height_adj == 1)
-                                        {
-                                                http_send_mes(POST_HEIGHT_ADD);
-                                                Motor_HandCtl_Height(ADD);
-                                        }
-                                        else if (mqtt_json_s.mqtt_height_adj == -1)
-                                        {
-                                                http_send_mes(POST_HEIGHT_SUB);
-                                                Motor_HandCtl_Height(SUB);
-                                        }
-                                        printf("mqtt_json_s.mqtt_height_adj = %d\r\n", mqtt_json_s.mqtt_height_adj);
-                                }
-                        }
-                        if ((json_data_ctr_parse = cJSON_GetObjectItem(json_data_string_parse, "s")) != NULL) //手动全收全放
-                        {
-                                if ((work_status != WORK_FIRE) && (work_status != WORK_PROTECT))
-                                {
-                                        if ((json_data_angle_parse = cJSON_GetObjectItem(json_data_string_parse, "last")) != NULL)
-                                        {
-                                                mqtt_json_s.mqtt_last = json_data_angle_parse->valueint;
-                                                printf("mqtt_last=%d\n", mqtt_json_s.mqtt_last);
-                                        }
-                                        work_status = WORK_HAND;
-                                        Led_Status = LED_STA_HAND;
-                                        strcpy(mqtt_json_s.mqtt_mode, "0"); //json上传模式改为0手动
-                                        if (json_data_ctr_parse->valueint == 1)
-                                        {
-                                                http_send_mes(POST_ALLUP);
-                                                Motor_AutoCtl(0, 0);
-                                        }
-                                        else if (json_data_ctr_parse->valueint == -1)
-                                        {
-                                                http_send_mes(POST_ALLDOWN);
-                                                Motor_AutoCtl(100, 80);
-                                        }
-                                }
-                        }
-                        if ((json_data_ctr_parse = cJSON_GetObjectItem(json_data_string_parse, "c")) != NULL) //指令手动切自动
-                        {
-                                if (strcmp(json_data_ctr_parse->valuestring, "a") == 0) //收到控制台切换auto指令
-                                {
-                                        work_status = WORK_AUTO;
-                                        Led_Status = LED_STA_AUTO;
-                                        strcpy(mqtt_json_s.mqtt_mode, "1");
-                                        http_send_mes(POST_TARGET); //直接发送目标结果
-                                        printf("hand to auto,auto_height=%d,auto_angle=%d\n", mqtt_json_s.mqtt_height, mqtt_json_s.mqtt_angle);
-                                        if ((mqtt_json_s.mqtt_height == 0) && (mqtt_json_s.mqtt_angle == 0)) //目标是0.0直接到0.0
-                                        {
-                                                Motor_AutoCtl((int)mqtt_json_s.mqtt_height, (int)mqtt_json_s.mqtt_angle); //转自动控制
-                                        }
-                                        else
-                                        {
-                                                Motor_SetAllDown();                                                       //先清零
-                                                Motor_AutoCtl((int)mqtt_json_s.mqtt_height, (int)mqtt_json_s.mqtt_angle); //转自动控制
-                                        }
-                                }
-                                if (strcmp(json_data_ctr_parse->valuestring, "m") == 0) //收到控制台手动控制指令
-                                {
-                                        if ((work_status != WORK_FIRE) && (work_status != WORK_PROTECT))
-                                        {
-                                                if ((json_data_angle_parse = cJSON_GetObjectItem(json_data_string_parse, "last")) != NULL)
-                                                {
-                                                        mqtt_json_s.mqtt_last = json_data_angle_parse->valueint;
-                                                        printf("mqtt_last=%d\n", mqtt_json_s.mqtt_last);
-                                                }
-                                                work_status = WORK_HAND;
-                                                Led_Status = LED_STA_HAND;
-                                                strcpy(mqtt_json_s.mqtt_mode, "0"); //json上传模式改为0手动
-                                                http_send_mes(POST_NORMAL);
-                                        }
-                                }
-                        }
+                    }
                 }
-                else
+                        
+                else if (strcmp(json_data_action->valuestring, "command") == 0)
+                            
                 {
+                    if ((human_status == 1) && (strcmp(json_data_action->valuestring, "command") == 0))//有人则退出
+                    {
+
                         printf("Json Formatting error6\n");
+
                         cJSON_Delete(json_data_parse);
-                        cJSON_Delete(json_data_string_parse);
                         return 0;
+                    }
+                    else
+                    {
+                                           //human_status = 0;
+                        auto_ctl_count = 0;
+                        strcpy(mqtt_json_s.mqtt_control_char, "command");
+                        
+                        if ((json_data_mode_parse = cJSON_GetObjectItem(json_data_string_parse, "s_port")) != NULL)
+                        {
+                            if (strncmp("port1", json_data_mode_parse->valuestring, strlen("port1")) == 0)   //上灯条
+                            {
+                                strcpy(mqtt_json_s.mqtt_mode_char, "port1");
+                                if ((json_data_stage_parse = cJSON_GetObjectItem(json_data_string_parse, "set_state")) != NULL)
+                                {
+                                    if (strncmp("100", json_data_stage_parse->valuestring, strlen("100")) == 0)
+                                    {
+                                        strcpy(mqtt_json_s.mqtt_stage, "100");
+                                        Up_Light_Status = 0;
+                                        Led_UP_W(100, 10);
+                                        Led_UP_Y(100, 10);
+                                    }
+                                    if (strncmp("0", json_data_stage_parse->valuestring, strlen("0")) == 0)
+                                    {
+                                        strcpy(mqtt_json_s.mqtt_stage, "0");
+                                        Up_Light_Status = 1;
+                                        temp_hour = -1;
+                                    }
+                                }
+                                
+                            }
+                            if (strncmp("port2", json_data_mode_parse->valuestring, strlen("port2")) == 0)
+                            {
+                                strcpy(mqtt_json_s.mqtt_mode_char, "port2");
+                                if ((json_data_stage_parse = cJSON_GetObjectItem(json_data_string_parse, "set_state")) != NULL)
+                                {
+                                    if (strncmp("100", json_data_stage_parse->valuestring, strlen("100")) == 0)
+                                    {
+                                        strcpy(mqtt_json_s.mqtt_stage, "100");
+                                        Down_Light_Status = 0;
+                                        Led_DOWN_W(100, 10);
+                                        Led_DOWN_Y(100, 10);
+                                    }
+                                    if (strncmp("0", json_data_stage_parse->valuestring, strlen("0")) == 0)
+                                    {
+                                        strcpy(mqtt_json_s.mqtt_stage, "0");
+                                        Down_Light_Status = 1;
+                                        temp_hour = -1;
+                                    }
+                                    
+                                }
+                                
+                            }
+                        }
+                    }
+
                 }
-                cJSON_Delete(json_data_parse);
-                cJSON_Delete(json_data_string_parse);
+            }
+
         }
-        return 1;
+        else
+        {
+            printf("Json Formatting error6\n");
+            cJSON_Delete(json_data_parse);
+            cJSON_Delete(json_data_string_parse);
+            return 0;
+        }
+        cJSON_Delete(json_data_parse);
+        cJSON_Delete(json_data_string_parse);
+    }
+    return 1;
 }
 
 void create_http_json(uint8_t post_status, creat_json *pCreat_json)
@@ -813,11 +713,11 @@ void create_http_json(uint8_t post_status, creat_json *pCreat_json)
         //char status_creat_json_c[256];
         char status_creat_json[512];
         char status_cj[4];
-        float Wind_Read_t = -1;
-        char wind_Read_c[16];
+        /////////float Wind_Read_t = -1;
+        ///////////char wind_Read_c[16];
 
-        Wind_Read_t = Wind_Read();
-        sprintf(wind_Read_c, "%f", Wind_Read_t);
+        //////////Wind_Read_t = Wind_Read();
+        //////////sprintf(wind_Read_c, "%f", Wind_Read_t);
         //printf("Server_Timer_SEND() %s", (char *)Server_Timer_SEND());
         //strncpy(http_json_c.http_time[20], Server_Timer_SEND(), 20);
         // printf("this http_json_c.http_time[20]  %s\r\n", http_json_c.http_time);
@@ -827,89 +727,22 @@ void create_http_json(uint8_t post_status, creat_json *pCreat_json)
         {
                 itoa(wifidata.rssi, mqtt_json_s.mqtt_Rssi, 10);
         }
-        int8_t mqtt_height1 = -1;
-        int8_t mqtt_angle1 = -1;
-        Motor_Value_Query(&mqtt_height1, &mqtt_angle1);
-        printf("Motor_Value_Query,mqtt_angle1=%d,mqtt_height1=%d\r\n", mqtt_angle1, mqtt_height1);
-
-        if (post_status == POST_ANGLE_ADD)
-        {
-                if (mqtt_angle1 < 80)
-                {
-                        mqtt_angle1 += 10;
-                }
-        }
-        else if (post_status == POST_ANGLE_SUB)
-        {
-                if (mqtt_angle1 > 0)
-                {
-                        mqtt_angle1 -= 10;
-                }
-        }
-        else if (post_status == POST_HEIGHT_ADD)
-        {
-                if (mqtt_height1 < 100)
-                {
-                        mqtt_height1 += 10;
-                        mqtt_angle1 = 80;
-                }
-        }
-        else if (post_status == POST_HEIGHT_SUB)
-        {
-                if (mqtt_height1 > 0)
-                {
-                        mqtt_height1 -= 10;
-                        mqtt_angle1 = 0;
-                }
-        }
-        else if (post_status == POST_ALLDOWN)
-        {
-                mqtt_height1 = 100;
-                mqtt_angle1 = 80;
-        }
-        else if (post_status == POST_ALLUP)
-        {
-                mqtt_height1 = 0;
-                mqtt_angle1 = 0;
-        }
-        else if (post_status == POST_TARGET)
-        {
-                mqtt_height1 = mqtt_json_s.mqtt_height;
-                mqtt_angle1 = mqtt_json_s.mqtt_angle;
-        }
-
-        itoa(mqtt_height1, mqtt_json_s.mqtt_height_char, 10);
-        itoa(mqtt_angle1, mqtt_json_s.mqtt_angle_char, 10);
-        itoa(mqtt_json_s.mqtt_wind_protection, mqtt_json_s.mqtt_wind_protection_char, 10);
-        itoa(mqtt_json_s.mqtt_sun_condition, mqtt_json_s.mqtt_sun_condition_char, 10);
-        itoa(mqtt_json_s.mqtt_frost_protection, mqtt_json_s.mqtt_frost_protection_char, 10);
-        itoa(mqtt_json_s.mqtt_fire_alarm, mqtt_json_s.mqtt_fire_alarm_char, 10);
-        // sprintf(status_creat_json, "%s%s%s%s%s%s%s%s%s%s%s", "{\"height\":", mqtt_height1 + ",", "\"angle\":", mqtt_angle1 + ",", "\"auto\":0,", "\"wind_protection\":", ",", "\"sun_condition\":", ",", "\"frost_protection\":", "}");
+   
+        
+        //itoa(mqtt_json_s.mqtt_fire_alarm, mqtt_json_s.mqtt_fire_alarm_char, 10);
+        
+        // sprintf(status_creat_json, "%s%s%s%s%s%s%s%s%s%s%s", "{\"control\":", mqtt_height1 + ",", "\"angle\":", mqtt_angle1 + ",", "\"auto\":0,", "\"wind_protection\":", ",", "\"sun_condition\":", ",", "\"frost_protection\":", "}");
         sprintf(status_cj, "%s", "\"");
-        sprintf(status_creat_json, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", "{",
-                status_cj, "height", status_cj, ":", mqtt_json_s.mqtt_height_char, ",",
-                status_cj, "angel", status_cj, ":", mqtt_json_s.mqtt_angle_char, ",",
-                status_cj, "auto", status_cj, ":", mqtt_json_s.mqtt_mode, ",",
-                status_cj, "wind_protection", status_cj, ":", mqtt_json_s.mqtt_wind_protection_char, ",",
-                status_cj, "sun_condition", status_cj, ":", mqtt_json_s.mqtt_sun_condition_char, ",",
-                status_cj, "frost_protection", status_cj, ":", mqtt_json_s.mqtt_frost_protection_char, ",",
-                status_cj, "fire_alarm", status_cj, ":", mqtt_json_s.mqtt_fire_alarm_char, "}");
+
+        sprintf(status_creat_json, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", "{",
+                status_cj, "action", status_cj, ":", mqtt_json_s.mqtt_control_char, ",",
+                status_cj, "s_port", status_cj, ":", mqtt_json_s.mqtt_mode_char, ",",
+                status_cj, "set_state", status_cj, ":", mqtt_json_s.mqtt_stage, "}");
+                
 
         sprintf(http_json_c.blu_lng, "%f", ob_blu_json.lon);
         sprintf(http_json_c.blu_lat, "%f", ob_blu_json.lat);
 
-        /*if(post_status==POST_NOCOMMAND)
-    {
-        cJSON_AddItemToObject(root, "feeds", fe_body);
-        cJSON_AddItemToArray(fe_body, item);
-        cJSON_AddItemToObject(item, "created_at", cJSON_CreateString(http_json_c.http_time));
-        cJSON_AddItemToObject(item, "field1", cJSON_CreateString(mqtt_json_s.mqtt_height_char)); //高度
-        cJSON_AddItemToObject(item, "field2", cJSON_CreateString(mqtt_json_s.mqtt_angle_char));  //角度
-        cJSON_AddItemToObject(item, "field3", cJSON_CreateString(mqtt_json_s.mqtt_mode));        //模式
-        cJSON_AddItemToObject(item, "field4", cJSON_CreateString(wind_Read_c));                  //风速
-        cJSON_AddItemToObject(item, "field5", cJSON_CreateString(mqtt_json_s.mqtt_Rssi));        //WIFI RSSI       
-    }
-    else*/
         {
                 //printf("status_creat_json %s\r\n", status_creat_json);
                 cJSON_AddItemToObject(root, "feeds", fe_body);
@@ -918,16 +751,19 @@ void create_http_json(uint8_t post_status, creat_json *pCreat_json)
                 cJSON_AddItemToObject(item, "status", cJSON_CreateString(status_creat_json));
                 cJSON_AddItemToArray(fe_body, next);
                 cJSON_AddItemToObject(next, "created_at", cJSON_CreateString(http_json_c.http_time));
-                cJSON_AddItemToObject(next, "field1", cJSON_CreateString(mqtt_json_s.mqtt_height_char)); //高度
-                cJSON_AddItemToObject(next, "field2", cJSON_CreateString(mqtt_json_s.mqtt_angle_char));  //角度
-                cJSON_AddItemToObject(next, "field3", cJSON_CreateString(mqtt_json_s.mqtt_mode));        //模式
-                if (Wind_Read_t >= 0)
+                cJSON_AddItemToObject(next, "field1", cJSON_CreateString(mqtt_json_s.mqtt_light_char)); //  灯实际亮灭
+                cJSON_AddItemToObject(next, "field2", cJSON_CreateNumber(mqtt_json_s.mqtt_Y));  //   灯照度
+                if (human_status == NOHUMAN)
                 {
-                        cJSON_AddItemToObject(next, "field4", cJSON_CreateString(wind_Read_c)); //风速
+                    cJSON_AddItemToObject(next, "field3", cJSON_CreateString("0"));
+                    strcpy(mqtt_json_s.mqtt_light_char, "0");
                 }
-                cJSON_AddItemToObject(next, "field5", cJSON_CreateString(mqtt_json_s.mqtt_Rssi)); //WIFI RSSI
-                cJSON_AddItemToObject(next, "field6", cJSON_CreateString(http_json_c.blu_lng));   //
-                cJSON_AddItemToObject(next, "field7", cJSON_CreateString(http_json_c.blu_lat));
+                else if (human_status == HAVEHUMAN)
+                {
+                    cJSON_AddItemToObject(next, "field3", cJSON_CreateString("1"));
+                } //  人感值
+                cJSON_AddItemToObject(next, "field4", cJSON_CreateString(mqtt_json_s.mqtt_mode));        //模式   自动/手动
+                
         }
 
         char *cjson_printunformat;
@@ -945,3 +781,4 @@ void create_http_json(uint8_t post_status, creat_json *pCreat_json)
         cJSON_Delete(root);
         //return pCreat_json;
 }
+
