@@ -319,7 +319,7 @@ void app_main(void)
             vTaskDelay(500 / portTICK_RATE_MS);
         }
     }
-    strncpy(ble_dev_pwd, SerialNum + 3, 4);
+    strncpy(ble_dev_pwd, SerialNum + 1, 4);
     printf("ble_dev_pwd=%s\n", ble_dev_pwd);
 
     ble_app_start();

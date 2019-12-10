@@ -77,11 +77,11 @@ esp_err_t parse_objects_bluetooth(char *blu_json_data)
         }
 
         //数据包包含NULL则直接返回error
-        if (strstr(blu_json_data, "null") != NULL) //需要解析的字符串内含有null
+        /*if (strstr(blu_json_data, "null") != NULL) //需要解析的字符串内含有null
         {
                 printf("there is null in blu data\r\n");
                 return BLU_PWD_REFUSE;
-        }
+        }*/
 
         cjson_blu_data_parse = cJSON_Parse(blu_json_data);
         if (cjson_blu_data_parse == NULL) //如果数据包不为JSON则退出
@@ -260,7 +260,7 @@ esp_err_t parse_objects_bluetooth(char *blu_json_data)
                                 printf("orientation %f\r\n", cjson_blu_data_parse_ob->valuedouble);
                                 ob_blu_json.orientation = cjson_blu_data_parse_ob->valuedouble;
                         }
-                        if ((cjson_blu_data_parse_ob = cJSON_GetObjectItem(cjson_blu_data_parse, "s1")) != NULL)
+                        /*if ((cjson_blu_data_parse_ob = cJSON_GetObjectItem(cjson_blu_data_parse, "s1")) != NULL)
                         {
                                 printf("s1 %s\r\n", cjson_blu_data_parse_ob->valuestring);
                                 sscanf(cjson_blu_data_parse_ob->valuestring, "%2s", get_num);
@@ -275,7 +275,7 @@ esp_err_t parse_objects_bluetooth(char *blu_json_data)
                                 ob_blu_json.T4_h = atoi(get_num);
                                 ob_blu_json.T4_m = atoi((cjson_blu_data_parse_ob->valuestring) + 3);
                                 printf("T4 %d %d \r\n", ob_blu_json.T4_h, ob_blu_json.T4_m);
-                        }
+                        }*/
                         if ((cjson_blu_data_parse_ob = cJSON_GetObjectItem(cjson_blu_data_parse, "s2")) != NULL)
                         {
                                 printf("s2 %s\r\n", cjson_blu_data_parse_ob->valuestring);

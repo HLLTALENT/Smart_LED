@@ -40,13 +40,13 @@ int8_t Wallkey_Read(uint8_t *Key_Id, int8_t Switch)
                 if (data_u1[9] == KEY_SIN)
                 {
                     ESP_LOGI(TAG, "KEY_SIN");
-                    vTaskDelay(2000 / portTICK_RATE_MS);
+                    //vTaskDelay(2000 / portTICK_RATE_MS);
                 }
 
                 else if (data_u1[9] == KEY_SIN_RELEASE)
                 {
                     ESP_LOGI(TAG, "KEY_RELEASE");
-                    //vTaskDelay(1000 / portTICK_RATE_MS);
+                    vTaskDelay(2000 / portTICK_RATE_MS);
                 }
                 //}
                 /*if (data_u1[9] == KEY_SIN)
@@ -90,6 +90,7 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
             Led_UP_Y(100, 100);
             Led_DOWN_W(100, 100);
             Led_DOWN_Y(100, 100);
+
             printf("全关\r\n");
             Down_Light_Status = 0;
             Up_Light_Status = 0;
@@ -107,23 +108,22 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
         {
             auto_ctl_count1 = 0;
             Led_Status = LED_STA_AUTO; //绿灯亮
-            Led_UP_W(100, 100);
-            Led_UP_Y(100, 100);
-            Led_DOWN_W(100, 100);
-            Led_DOWN_Y(100, 100);
             Down_Light_Status = 0;
             Up_Light_Status = 1;
-            printf("上亮\r\n");
             temp_hour = -1;
+            printf("全亮\r\n");
         }
         else if ((key_read == KEY_SIN) && (Down_Light_Status == 0) && (Up_Light_Status == 1))
         {
             auto_ctl_count1 = 0;
             Led_Status = LED_STA_AUTO; //绿灯亮
+            temp_hour = -1;
+            Led_DOWN_W(100, 100);
+            Led_DOWN_Y(100, 100);
+            printf("全开\r\n");
+
             Down_Light_Status = 1;
             Up_Light_Status = 1;
-            temp_hour = -1;
-            printf("全亮\r\n");
         }
         //vTaskDelay(10 / portTICK_RATE_MS);
     }
