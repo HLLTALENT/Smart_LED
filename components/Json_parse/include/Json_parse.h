@@ -22,7 +22,7 @@ esp_err_t creat_object(void);
 #define WORK_PROTECT 0X07    //风速和结霜保护
 #define WORK_FIREINIT 0X08   //开机就火灾
 #define WORK_FIRE 0x09       //火灾保护状态
-#define WORK_WALLKEYOFF 0X10
+#define LUNCHTIME 0X10       //午休
 
 #define PROTECT_ON 0X01  //当前有风速等平台保护状态
 #define PROTECT_OFF 0X00 //当前无风速等平台保护状态

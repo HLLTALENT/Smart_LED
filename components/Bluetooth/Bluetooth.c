@@ -43,6 +43,7 @@
 //#include "gatts_profile.h"
 #include "E2prom.h"
 #include "Http.h"
+#include "Smartconfig.h"
 
 #define GATTS_TAG "GATTS"
 
@@ -466,46 +467,46 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
 
                                 /*测试结束 */
 
-                                // uint16_t descr_value = param->write.value[1] << 8 | param->write.value[0];
-                                // if (descr_value == 0x0001)
-                                // {
-                                //         if (a_property & ESP_GATT_CHAR_PROP_BIT_NOTIFY)
-                                //         {
-                                //                 ESP_LOGI(GATTS_TAG, "notify enable");
-                                //                 uint8_t notify_data[15];
-                                //                 for (int i = 0; i < sizeof(notify_data); ++i)
-                                //                 {
-                                //                         notify_data[i] = i % 0xff;
-                                //                 }
-                                //                 //the size of notify_data[] need less than MTU size
-                                //                 esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, gl_profile_tab[PROFILE_A_APP_ID].char_handle,
-                                //                                             sizeof(notify_data), notify_data, false);
-                                //         }
-                                // }
-                                // else if (descr_value == 0x0002)
-                                // {
-                                //         if (a_property & ESP_GATT_CHAR_PROP_BIT_INDICATE)
-                                //         {
-                                //                 ESP_LOGI(GATTS_TAG, "indicate enable");
-                                //                 uint8_t indicate_data[15];
-                                //                 for (int i = 0; i < sizeof(indicate_data); ++i)
-                                //                 {
-                                //                         indicate_data[i] = i % 0xff;
-                                //                 }
-                                //                 //the size of indicate_data[] need less than MTU size
-                                //                 esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, gl_profile_tab[PROFILE_A_APP_ID].char_handle,
-                                //                                             sizeof(indicate_data), indicate_data, true);
-                                //         }
-                                // }
-                                // else if (descr_value == 0x0000)
-                                // {
-                                //         ESP_LOGI(GATTS_TAG, "notify/indicate disable ");
-                                // }
-                                // else
-                                // {
-                                //         ESP_LOGE(GATTS_TAG, "unknown descr value");
-                                //         esp_log_buffer_hex(GATTS_TAG, param->write.value, param->write.len);
-                                // }
+                                 uint16_t descr_value = param->write.value[1] << 8 | param->write.value[0];
+                                 if (descr_value == 0x0001)
+                                 {
+                                         if (a_property & ESP_GATT_CHAR_PROP_BIT_NOTIFY)
+                                         {
+                                                 ESP_LOGI(GATTS_TAG, "notify enable");
+                                                 uint8_t notify_data[15];
+                                                 for (int i = 0; i < sizeof(notify_data); ++i)
+                                                 {
+                                                         notify_data[i] = i % 0xff;
+                                                 }
+                                                 //the size of notify_data[] need less than MTU size
+                                                 esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, gl_profile_tab[PROFILE_A_APP_ID].char_handle,
+                                                                             sizeof(notify_data), notify_data, false);
+                                         }
+                                 }
+                                 else if (descr_value == 0x0002)
+                                 {
+                                         if (a_property & ESP_GATT_CHAR_PROP_BIT_INDICATE)
+                                         {
+                                                 ESP_LOGI(GATTS_TAG, "indicate enable");
+                                                 uint8_t indicate_data[15];
+                                                 for (int i = 0; i < sizeof(indicate_data); ++i)
+                                                 {
+                                                         indicate_data[i] = i % 0xff;
+                                                 }
+                                                 //the size of indicate_data[] need less than MTU size
+                                                 esp_ble_gatts_send_indicate(gatts_if, param->write.conn_id, gl_profile_tab[PROFILE_A_APP_ID].char_handle,
+                                                                             sizeof(indicate_data), indicate_data, true);
+                                         }
+                                 }
+                                 else if (descr_value == 0x0000)
+                                 {
+                                         ESP_LOGI(GATTS_TAG, "notify/indicate disable ");
+                                 }
+                                 else
+                                 {
+                                         ESP_LOGE(GATTS_TAG, "unknown descr value");
+                                         esp_log_buffer_hex(GATTS_TAG, param->write.value, param->write.len);
+                                 }
                         }
 
                         else
@@ -522,7 +523,7 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
                                         strcpy(BleRespond, "{\"result\":\"error\",\"code\":100}");
                                 }
 
-                                /*else if (ret == BLU_WIFI_ERR) //WIFI连接错误
+                                else if (ret == BLU_WIFI_ERR) //WIFI连接错误
                                 {
                                         bzero(BleRespond, sizeof(BleRespond));
                                         if (Wifi_ErrCode == 7) //密码错误
@@ -537,7 +538,7 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
                                         {
                                                 strcpy(BleRespond, "{\"result\":\"error\",\"code\":203}");
                                         }
-                                }*/
+                                }
                                 else //解析蓝牙正确且按新参数配置，存储eeprom
                                 {
                                         bzero(BleRespond, sizeof(BleRespond));
@@ -549,6 +550,7 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
                                         E2prom_BluWrite(0x00, (uint8_t *)zerobuf, 256);
                                         E2prom_BluWrite(0x00, (uint8_t *)buf, param->write.len);
                                         Ble_mes_status = BLEOK;
+
                                 }
                         }
                 }
@@ -575,8 +577,8 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
                 gl_profile_tab[PROFILE_A_APP_ID].char_uuid.uuid.uuid16 = GATTS_CHAR_UUID_TEST_A;
 
                 esp_ble_gatts_start_service(gl_profile_tab[PROFILE_A_APP_ID].service_handle);
-                // a_property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
-                a_property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_WRITE;
+                a_property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
+                //a_property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_WRITE;
                 esp_err_t add_char_ret = esp_ble_gatts_add_char(gl_profile_tab[PROFILE_A_APP_ID].service_handle, &gl_profile_tab[PROFILE_A_APP_ID].char_uuid,
                                                                 ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
                                                                 a_property,
@@ -772,8 +774,8 @@ static void gatts_profile_b_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
                 gl_profile_tab[PROFILE_B_APP_ID].char_uuid.uuid.uuid16 = GATTS_CHAR_UUID_TEST_B;
 
                 esp_ble_gatts_start_service(gl_profile_tab[PROFILE_B_APP_ID].service_handle);
-                // b_property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
-                b_property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_WRITE;
+                b_property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_WRITE | ESP_GATT_CHAR_PROP_BIT_NOTIFY;
+                //b_property = ESP_GATT_CHAR_PROP_BIT_READ | ESP_GATT_CHAR_PROP_BIT_WRITE;
                 esp_err_t add_char_ret = esp_ble_gatts_add_char(gl_profile_tab[PROFILE_B_APP_ID].service_handle, &gl_profile_tab[PROFILE_B_APP_ID].char_uuid,
                                                                 ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE,
                                                                 b_property,

@@ -90,3 +90,15 @@ void Localcalculation(float lightX, uint16_t color_temp, int fade_time)
     printf("Y=%f\r\n", Y);
     printf("Z=%lld\r\n", Z);
 }
+
+void Localcalculationlunchtime(int year, int month, int day, int hour, int minute, int T2_h, int T2_m, int T3_h, int T3_m)
+{
+    if (((hour * 60 + minute) >= (T2_h * 60 + T2_m)) && ((hour * 60 + minute) < (T3_h * 60 + T3_m)))
+    {
+        Led_UP_W(100, 100);
+        Led_UP_Y(100, 100);
+        Led_DOWN_W(100, 100);
+        Led_DOWN_Y(100, 100);
+        work_status = LUNCHTIME;
+    }
+}

@@ -23,6 +23,7 @@
 
 wifi_config_t s_staconf;
 uint8_t wifi_status;
+uint8_t Wifi_ErrCode = 0;
 
 enum wifi_connect_sta
 {

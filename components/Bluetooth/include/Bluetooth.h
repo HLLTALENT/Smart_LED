@@ -23,8 +23,8 @@
 #include "esp_bt_defs.h"
 #include "esp_bt_main.h"
 
-#define BLEOK    0x01
-#define BLEERR   0x00
+#define BLEOK 0x01
+#define BLEERR 0x00
 
 char ble_dev_pwd[16];
 uint8_t start_read_blue_ret;
@@ -44,6 +44,8 @@ typedef enum
     BLU_NO_WIFI_PWD,
     BLU_COMMAND_SWITCH,
     BLU_COMMAND_CALCULATION,
+    BLU_WIFI_ERR
+
 } BLU_error_info;
 
 typedef struct blufi_beacon_s blufi_beacon_t;
@@ -56,6 +58,8 @@ char ChannelId[17];
 
 uint8_t Ble_mes_status;
 uint8_t Ble_need_restart;
+
+extern char BleRespond[128]; // 蓝牙回复
 
 //#define PROFILE_NUM 1
 //#define PROFILE_APP_ID 0

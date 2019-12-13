@@ -76,6 +76,8 @@ void timer_periodic_cb(void *arg) //200ms中断一次
             Localcalculation(lightX, color_temp, 1000);
         }
 
+        Localcalculationlunchtime(year, month, day, hour, min, ob_blu_json.T2_h, ob_blu_json.T2_m, ob_blu_json.T3_h, ob_blu_json.T3_m);
+
         //ESP_LOGI("wifi", "free Heap:%d,%d", esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_8BIT));
 
         /*if (mqtt_json_s.mqtt_last > 0)

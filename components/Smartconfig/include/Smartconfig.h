@@ -16,5 +16,6 @@ EventGroupHandle_t wifi_event_group;
 #define WIFISTATUS_DISCONNET 0X00
 uint8_t WifiStatus;
 uint8_t wifi_status;
+extern uint8_t Wifi_ErrCode; //7：密码错误8：未找到指定wifi
 
 #endif

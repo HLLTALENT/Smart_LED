@@ -1,5 +1,6 @@
 #include <stdlib.h>
 
+#include "Bluetooth.h"
 #include "Http.h"
 #include "nvs.h"
 #include "Json_parse.h"
@@ -162,6 +163,7 @@ void http_get_task(void *pvParameters)
             if (err != 0 || res == NULL)
             {
                 ESP_LOGE(TAG, "DNS lookup failed err=%d res=%p", err, res);
+                strcpy(BleRespond, "{\"result\":\"error\",\"code\":301}"); //DNS域名解析失败
                 vTaskDelay(1000 / portTICK_PERIOD_MS);
                 continue;
             }
@@ -177,6 +179,7 @@ void http_get_task(void *pvParameters)
             {
                 ESP_LOGE(TAG, "... Failed to allocate socket.");
                 freeaddrinfo(res);
+                strcpy(BleRespond, "{\"result\":\"error\",\"code\":302}"); //新建socket失败
                 vTaskDelay(1000 / portTICK_PERIOD_MS);
                 continue;
             }
@@ -207,6 +210,7 @@ void http_get_task(void *pvParameters)
             {
                 ESP_LOGE(TAG, "... socket send failed");
                 close(s);
+                strcpy(BleRespond, "{\"result\":\"error\",\"code\":304}"); //发送HTTP包失败
                 vTaskDelay(4000 / portTICK_PERIOD_MS);
                 continue;
             }
@@ -221,6 +225,7 @@ void http_get_task(void *pvParameters)
             {
                 ESP_LOGE(TAG, "... failed to set socket receiving timeout");
                 close(s);
+                strcpy(BleRespond, "{\"result\":\"error\",\"code\":305}"); //socket接收超时失败
                 vTaskDelay(4000 / portTICK_PERIOD_MS);
                 continue;
             }
@@ -248,7 +253,6 @@ void http_get_task(void *pvParameters)
         vTaskSuspend(httpHandle);
     }
 }
-
 //激活流程
 int http_activate(void)
 {
@@ -273,11 +277,14 @@ int http_activate(void)
         printf("build_http");
         xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
                             false, true, portMAX_DELAY);
+
+        //DNS域名解析
         int err = getaddrinfo(WEB_SERVER, "80", &hints, &res);
 
         if (err != 0 || res == NULL)
         {
             ESP_LOGE(TAG, "DNS lookup failed err=%d res=%p", err, res);
+            strcpy(BleRespond, "{\"result\":\"error\",\"code\":301}"); //DNS域名解析失败
             vTaskDelay(1000 / portTICK_PERIOD_MS);
             continue;
         }
@@ -285,33 +292,39 @@ int http_activate(void)
         /* Code to print the resolved IP.
         Note: inet_ntoa is non-reentrant, look at ipaddr_ntoa_r for "real" code */
         addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
-        ESP_LOGI(TAG, "DNS lookup succeeded. IP=%s", inet_ntoa(*addr));
+        ESP_LOGI(TAG, "DNS lookup succeeded. IP=%s", inet_ntoa(*addr)); //打印获取的IP
 
+        //新建socket
         s = socket(res->ai_family, res->ai_socktype, 0);
         if (s < 0)
         {
             ESP_LOGE(TAG, "... Failed to allocate socket.");
             freeaddrinfo(res);
+            strcpy(BleRespond, "{\"result\":\"error\",\"code\":302}"); //新建socket失败
             vTaskDelay(1000 / portTICK_PERIOD_MS);
             continue;
         }
         ESP_LOGI(TAG, "... allocated socket");
-
+        //连接ip
         if (connect(s, res->ai_addr, res->ai_addrlen) != 0)
         {
             ESP_LOGE(TAG, "... socket connect failed errno=%d", errno);
             close(s);
             freeaddrinfo(res);
+            strcpy(BleRespond, "{\"result\":\"error\",\"code\":303}"); //连接ip失败
             vTaskDelay(4000 / portTICK_PERIOD_MS);
             continue;
         }
 
         ESP_LOGI(TAG, "... connected");
         freeaddrinfo(res);
+
+        //发送http包
         if (write(s, build_http, strlen(build_http)) < 0)
         {
             ESP_LOGE(TAG, "... socket send failed");
             close(s);
+            strcpy(BleRespond, "{\"result\":\"error\",\"code\":304}"); //发送HTTP包失败
             vTaskDelay(4000 / portTICK_PERIOD_MS);
             continue;
         }
@@ -324,6 +337,7 @@ int http_activate(void)
         {
             ESP_LOGE(TAG, "... failed to set socket receiving timeout");
             close(s);
+            strcpy(BleRespond, "{\"result\":\"error\",\"code\":305}"); //socket接收超时失败
             vTaskDelay(4000 / portTICK_PERIOD_MS);
             continue;
         }
@@ -382,6 +396,7 @@ void http_send_mes(uint8_t post_status)
     if (err != 0 || res == NULL)
     {
         ESP_LOGE(TAG, "DNS lookup failed err=%d res=%p", err, res);
+        strcpy(BleRespond, "{\"result\":\"error\",\"code\":301}"); //DNS域名解析失败
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 
@@ -395,6 +410,7 @@ void http_send_mes(uint8_t post_status)
     {
         ESP_LOGE(TAG, "... Failed to allocate socket.");
         freeaddrinfo(res);
+        strcpy(BleRespond, "{\"result\":\"error\",\"code\":302}"); //新建socket失败
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
     ESP_LOGI(TAG, "... allocated socket");
@@ -424,6 +440,7 @@ void http_send_mes(uint8_t post_status)
     {
         ESP_LOGE(TAG, "... socket send failed");
         close(s);
+        strcpy(BleRespond, "{\"result\":\"error\",\"code\":304}"); //发送HTTP包失败
         vTaskDelay(4000 / portTICK_PERIOD_MS);
     }
     ESP_LOGI(TAG, "... http socket send success");
@@ -445,6 +462,7 @@ void http_send_mes(uint8_t post_status)
     {
         ESP_LOGE(TAG, "... failed to set socket receiving timeout");
         close(s);
+        strcpy(BleRespond, "{\"result\":\"error\",\"code\":305}"); //socket接收超时失败
         vTaskDelay(4000 / portTICK_PERIOD_MS);
     }
     ESP_LOGI(TAG, "... set socket receiving timeout success");

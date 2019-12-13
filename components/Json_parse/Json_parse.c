@@ -77,11 +77,11 @@ esp_err_t parse_objects_bluetooth(char *blu_json_data)
         }
 
         //数据包包含NULL则直接返回error
-        /*if (strstr(blu_json_data, "null") != NULL) //需要解析的字符串内含有null
+        if (strstr(blu_json_data, "null") != NULL) //需要解析的字符串内含有null
         {
                 printf("there is null in blu data\r\n");
                 return BLU_PWD_REFUSE;
-        }*/
+        }
 
         cjson_blu_data_parse = cJSON_Parse(blu_json_data);
         if (cjson_blu_data_parse == NULL) //如果数据包不为JSON则退出
@@ -623,7 +623,7 @@ esp_err_t parse_objects_mqtt(char *mqtt_json_data)
                 else if (strcmp(json_data_action->valuestring, "command") == 0)
                             
                 {
-                    if ((human_status == 1) && (strcmp(json_data_action->valuestring, "command") == 0))//有人则退出
+                    if (((human_status == 1) && (strcmp(json_data_action->valuestring, "command") == 0)) || (work_status == LUNCHTIME))//有人则退出
                     {
 
                         printf("Json Formatting error6\n");

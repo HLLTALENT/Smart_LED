@@ -24,5 +24,6 @@ float Y;
 extern float lightX;
 
 extern void Localcalculation(float lightX, uint16_t color_temp, int fade_time);
+extern void Localcalculationlunchtime(int year, int month, int day, int hour, int minute, int T2_h, int T2_m, int T3_h, int T3_m);
 
 #endif
