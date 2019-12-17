@@ -1,20 +1,9 @@
-#include <stdlib.h>
-
-#include "Bluetooth.h"
 #include "Http.h"
 #include "nvs.h"
 #include "Json_parse.h"
 #include "E2prom.h"
 #include "Bluetooth.h"
 #include "Led.h"
-#include "Smartconfig.h"
-
-#include "esp_wifi.h"
-#include "esp_wpa2.h"
-#include "esp_event_loop.h"
-#include "esp_log.h"
-#include "esp_system.h"
-#include "nvs_flash.h"
 
 #define WEB_SERVER "api.ubibot.cn"
 #define WEB_PORT 80
@@ -89,6 +78,7 @@ esp_timer_create_args_t http_suspend = {
 
 void http_get_task(void *pvParameters)
 {
+    printf("HTTPtask\n");
     const struct addrinfo hints = {
         .ai_family = AF_INET,
         .ai_socktype = SOCK_STREAM,
@@ -121,16 +111,16 @@ void http_get_task(void *pvParameters)
 
     //free(json_data);
 
-    strcpy(mqtt_json_s.mqtt_mode, "1"); //给模式初值为自动模式
-    //mqtt_json_s.mqtt_sun_condition = 1; //初始化为晴天
+    strcpy(mqtt_json_s.mqtt_mode, "1"); //��ģʽ��ֵΪ�Զ�ģʽ
+    //mqtt_json_s.mqtt_sun_condition=1;//��ʼ��Ϊ����
 
     //mqtt_json_s.mqtt_height=0;
     //mqtt_json_s.mqtt_angle=0;
     //http_send_mes(POST_ALLDOWN);
-    /***打开定时器10s开启一次***/
+    /***�򿪶�ʱ��10s����һ��***/
     esp_timer_create(&http_suspend, &http_suspend_p);
     esp_timer_start_periodic(http_suspend_p, 1000 * 1000 * 10);
-    /***打开定时器×**/
+    /***�򿪶�ʱ����**/
 
     while (1)
     {
@@ -145,15 +135,7 @@ void http_get_task(void *pvParameters)
         ESP_LOGI(TAG, "Now Work Status=%d", work_status);
         ESP_LOGI("RAM", "Free Heap:%d,%d", esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_8BIT));
 
-        six_time_count++; //定时60s
-
-        if (need_send == 1)
-        {
-            http_send_mes(POST_NORMAL);
-            need_send = 0;
-            six_time_count = 0;
-        }
-
+        six_time_count++; //��ʱ60s
         if (six_time_count >= 6)
         {
             six_time_count = 0;
@@ -163,7 +145,6 @@ void http_get_task(void *pvParameters)
             if (err != 0 || res == NULL)
             {
                 ESP_LOGE(TAG, "DNS lookup failed err=%d res=%p", err, res);
-                strcpy(BleRespond, "{\"result\":\"error\",\"code\":301}"); //DNS域名解析失败
                 vTaskDelay(1000 / portTICK_PERIOD_MS);
                 continue;
             }
@@ -179,13 +160,12 @@ void http_get_task(void *pvParameters)
             {
                 ESP_LOGE(TAG, "... Failed to allocate socket.");
                 freeaddrinfo(res);
-                strcpy(BleRespond, "{\"result\":\"error\",\"code\":302}"); //新建socket失败
                 vTaskDelay(1000 / portTICK_PERIOD_MS);
                 continue;
             }
             ESP_LOGI(TAG, "... allocated socket");
 
-            //连接
+            //����
             int http_con_ret;
             http_con_ret = connect(s, res->ai_addr, res->ai_addrlen);
             if (http_con_ret != 0)
@@ -205,12 +185,11 @@ void http_get_task(void *pvParameters)
             ESP_LOGI(TAG, "... connected");
             freeaddrinfo(res);
 
-            /**************发送心跳*******************************************************/
+            /**************��������*******************************************************/
             if (write(s, build_heart_url, strlen(build_heart_url)) < 0)
             {
                 ESP_LOGE(TAG, "... socket send failed");
                 close(s);
-                strcpy(BleRespond, "{\"result\":\"error\",\"code\":304}"); //发送HTTP包失败
                 vTaskDelay(4000 / portTICK_PERIOD_MS);
                 continue;
             }
@@ -225,7 +204,6 @@ void http_get_task(void *pvParameters)
             {
                 ESP_LOGE(TAG, "... failed to set socket receiving timeout");
                 close(s);
-                strcpy(BleRespond, "{\"result\":\"error\",\"code\":305}"); //socket接收超时失败
                 vTaskDelay(4000 / portTICK_PERIOD_MS);
                 continue;
             }
@@ -253,7 +231,8 @@ void http_get_task(void *pvParameters)
         vTaskSuspend(httpHandle);
     }
 }
-//激活流程
+
+//��������
 int http_activate(void)
 {
     const struct addrinfo hints = {
@@ -274,17 +253,13 @@ int http_activate(void)
     printf("build_http=%s\n", build_http);
     while (1)
     {
-        printf("build_http");
         xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
                             false, true, portMAX_DELAY);
-
-        //DNS域名解析
         int err = getaddrinfo(WEB_SERVER, "80", &hints, &res);
 
         if (err != 0 || res == NULL)
         {
             ESP_LOGE(TAG, "DNS lookup failed err=%d res=%p", err, res);
-            strcpy(BleRespond, "{\"result\":\"error\",\"code\":301}"); //DNS域名解析失败
             vTaskDelay(1000 / portTICK_PERIOD_MS);
             continue;
         }
@@ -292,39 +267,33 @@ int http_activate(void)
         /* Code to print the resolved IP.
         Note: inet_ntoa is non-reentrant, look at ipaddr_ntoa_r for "real" code */
         addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
-        ESP_LOGI(TAG, "DNS lookup succeeded. IP=%s", inet_ntoa(*addr)); //打印获取的IP
+        ESP_LOGI(TAG, "DNS lookup succeeded. IP=%s", inet_ntoa(*addr));
 
-        //新建socket
         s = socket(res->ai_family, res->ai_socktype, 0);
         if (s < 0)
         {
             ESP_LOGE(TAG, "... Failed to allocate socket.");
             freeaddrinfo(res);
-            strcpy(BleRespond, "{\"result\":\"error\",\"code\":302}"); //新建socket失败
             vTaskDelay(1000 / portTICK_PERIOD_MS);
             continue;
         }
         ESP_LOGI(TAG, "... allocated socket");
-        //连接ip
+
         if (connect(s, res->ai_addr, res->ai_addrlen) != 0)
         {
             ESP_LOGE(TAG, "... socket connect failed errno=%d", errno);
             close(s);
             freeaddrinfo(res);
-            strcpy(BleRespond, "{\"result\":\"error\",\"code\":303}"); //连接ip失败
             vTaskDelay(4000 / portTICK_PERIOD_MS);
             continue;
         }
 
         ESP_LOGI(TAG, "... connected");
         freeaddrinfo(res);
-
-        //发送http包
         if (write(s, build_http, strlen(build_http)) < 0)
         {
             ESP_LOGE(TAG, "... socket send failed");
             close(s);
-            strcpy(BleRespond, "{\"result\":\"error\",\"code\":304}"); //发送HTTP包失败
             vTaskDelay(4000 / portTICK_PERIOD_MS);
             continue;
         }
@@ -337,7 +306,6 @@ int http_activate(void)
         {
             ESP_LOGE(TAG, "... failed to set socket receiving timeout");
             close(s);
-            strcpy(BleRespond, "{\"result\":\"error\",\"code\":305}"); //socket接收超时失败
             vTaskDelay(4000 / portTICK_PERIOD_MS);
             continue;
         }
@@ -371,17 +339,16 @@ void http_send_mes(uint8_t post_status)
     //pCreat_json1->creat_json_b=malloc(1024);
 
     //ESP_LOGI("wifi", "1free Heap:%d,%d", esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_8BIT));
-    //创建POST的json格式
+    //����POST��json��ʽ
     create_http_json(post_status, pCreat_json1);
 
-    if (post_status == POST_NOCOMMAND) //无commID
+    if (post_status == POST_NOCOMMAND) //��commID
     {
         sprintf(build_po_url, "%s%s%s%s%s%s%s%s%s%s%s%d%s", http.POST, http.POST_URL1, ApiKey, http.POST_URL_FIRMWARE, FIRMWARE, http.POST_URL_SSID, wifi_data.wifi_ssid,
                 http.HTTP_VERSION11, http.HOST, http.USER_AHENT, http.CONTENT_LENGTH, pCreat_json1->creat_json_c, http.ENTER);
     }
     else
     {
-        post_status = POST_NOCOMMAND;
         sprintf(build_po_url, "%s%s%s%s%s%s%s%s%s%s%s%d%s", http.POST, http.POST_URL1, ApiKey, http.POST_URL_SSID, wifi_data.wifi_ssid, http.POST_URL_COMMAND_ID, mqtt_json_s.mqtt_command_id,
                 http.HTTP_VERSION11, http.HOST, http.USER_AHENT, http.CONTENT_LENGTH, pCreat_json1->creat_json_c, http.ENTER);
     }
@@ -389,14 +356,13 @@ void http_send_mes(uint8_t post_status)
     sprintf(build_po_url_json, "%s%s", build_po_url, pCreat_json1->creat_json_b);
 
     free(pCreat_json1);
-    printf("build_po_url_json =\r\n%s\r\n build end \r\n", build_po_url_json);
+    printf("POSTJSON=\r\n%s\r\n", build_po_url_json);
     //ESP_LOGI("wifi", "2free Heap:%d,%d", esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_8BIT));
 
     int err = getaddrinfo(WEB_SERVER, "80", &hints, &res);
     if (err != 0 || res == NULL)
     {
         ESP_LOGE(TAG, "DNS lookup failed err=%d res=%p", err, res);
-        strcpy(BleRespond, "{\"result\":\"error\",\"code\":301}"); //DNS域名解析失败
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 
@@ -410,12 +376,11 @@ void http_send_mes(uint8_t post_status)
     {
         ESP_LOGE(TAG, "... Failed to allocate socket.");
         freeaddrinfo(res);
-        strcpy(BleRespond, "{\"result\":\"error\",\"code\":302}"); //新建socket失败
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
     ESP_LOGI(TAG, "... allocated socket");
 
-    //连接
+    //����
     int http_con_ret;
     http_con_ret = connect(s, res->ai_addr, res->ai_addrlen);
     if (http_con_ret != 0)
@@ -435,19 +400,18 @@ void http_send_mes(uint8_t post_status)
     ESP_LOGI(TAG, "... connected");
     freeaddrinfo(res);
 
-    //发送
+    //����
     if (write(s, build_po_url_json, strlen(build_po_url_json)) < 0)
     {
         ESP_LOGE(TAG, "... socket send failed");
         close(s);
-        strcpy(BleRespond, "{\"result\":\"error\",\"code\":304}"); //发送HTTP包失败
         vTaskDelay(4000 / portTICK_PERIOD_MS);
     }
     ESP_LOGI(TAG, "... http socket send success");
 
-    //设置接收
+    //���ý���
     struct timeval receiving_timeout;
-    if (work_status == WORK_HAND) //手动控制时的超时时间缩短，避免上传等待respond时，不运行指令
+    if (work_status == WORK_HAND) //�ֶ�����ʱ�ĳ�ʱʱ�����̣������ϴ��ȴ�respondʱ��������ָ��
     {
         receiving_timeout.tv_sec = 0;
         receiving_timeout.tv_usec = 100;
@@ -462,19 +426,18 @@ void http_send_mes(uint8_t post_status)
     {
         ESP_LOGE(TAG, "... failed to set socket receiving timeout");
         close(s);
-        strcpy(BleRespond, "{\"result\":\"error\",\"code\":305}"); //socket接收超时失败
         vTaskDelay(4000 / portTICK_PERIOD_MS);
     }
     ESP_LOGI(TAG, "... set socket receiving timeout success");
 
     /* Read HTTP response */
-    //接收HTTP返回
+    //����HTTP����
     bzero(recv_buf, sizeof(recv_buf));
     r = read(s, recv_buf, sizeof(recv_buf) - 1);
     printf("r=%d,recv=%s\r\n", r, recv_buf);
     close(s);
 
-    //解析返回数据
+    //������������
     if (r > 0)
     {
         parse_objects_http_respond(strchr(recv_buf, '{'));
