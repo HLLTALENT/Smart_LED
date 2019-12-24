@@ -4,7 +4,7 @@
 #include "esp_err.h"
 
 esp_err_t parse_objects_http_active(char *http_json_data);
-esp_err_t parse_objects_bluetooth(char *blu_json_data);
+int32_t parse_objects_bluetooth(char *blu_json_data); //esp_err_t parse_objects_bluetooth(char *blu_json_data);
 esp_err_t parse_objects_mqtt(char *json_data);
 esp_err_t parse_objects_heart(char *json_data);
 esp_err_t parse_Uart0(char *json_data);
@@ -117,7 +117,7 @@ struct
 
 int read_bluetooth(void);
 //creat_json *create_http_json(uint8_t post_status);
-void create_http_json(uint8_t post_status, creat_json *pCreat_json);
+void create_http_json(creat_json *pCreat_json);
 
 enum
 {
@@ -134,5 +134,12 @@ uint8_t protect_status; //保护状态，用于火灾和风速混合保护的切换
 
 int auto_ctl_count;
 int auto_ctl_count1; //自动控制指令计数，收到平台的自动控制指令后该变量清零，在定时器中每1s+1，加到180S（3min）后，进入本地计算
+
+/************metadata 参数***********/
+extern unsigned long fn_dp; //数据发送频率
+extern unsigned long fn_th; //温湿度频率
+extern uint8_t cg_data_led; //发送数据 LED状态 0关闭，1打开
+extern uint8_t net_mode;    //上网模式选择 0：自动模式 1：lan模式 2：wifi模式
+/************************************/
 
 #endif

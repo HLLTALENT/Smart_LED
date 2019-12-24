@@ -22,6 +22,12 @@
 
 extern uint8_t human_status;
 
+//metadata 参数
+unsigned long fn_dp = 60; //数据发送频率 默认60s
+unsigned long fn_th = 0;  //温湿度频率
+uint8_t cg_data_led = 1;  //发送数据 LED状态 0：不闪烁 1：闪烁
+uint8_t net_mode = 0;     //上网模式选择 0：自动模式 1：lan模式 2：wifi模式
+
 typedef enum
 {
     HTTP_JSON_FORMAT_TINGERROR,
@@ -35,7 +41,80 @@ extern uint32_t HTTP_STATUS;
 char get_num[5];
 char *key;
 int n = 0, i;
+int a, b = 0;
 
+//解析metadata
+static short Parse_metadata(char *ptrptr)
+{
+    // bool fn_flag = 0;
+    if (NULL == ptrptr)
+    {
+        return 0;
+    }
+
+    cJSON *pJsonJson = cJSON_Parse(ptrptr);
+    if (NULL == pJsonJson)
+    {
+        cJSON_Delete(pJsonJson); //delete pJson
+
+        return 0;
+    }
+
+    cJSON *pSubSubSub = cJSON_GetObjectItem(pJsonJson, "fn_th"); //"fn_th"
+    if (NULL != pSubSubSub)
+    {
+
+        if ((unsigned long)pSubSubSub->valueint != fn_th)
+        {
+            fn_th = (unsigned long)pSubSubSub->valueint;
+            printf("fn_th = %ld\n", fn_th);
+        }
+    }
+
+    pSubSubSub = cJSON_GetObjectItem(pJsonJson, "fn_dp"); //"fn_dp"
+    if (NULL != pSubSubSub)
+    {
+        if ((unsigned long)pSubSubSub->valueint != fn_dp)
+        {
+            // fn_flag = 1;
+            fn_dp = (unsigned long)pSubSubSub->valueint;
+            printf("fn_dp = %ld\n", fn_dp);
+        }
+    }
+
+    pSubSubSub = cJSON_GetObjectItem(pJsonJson, "cg_data_led"); //"cg_data_led"
+    if (NULL != pSubSubSub)
+    {
+
+        if ((uint8_t)pSubSubSub->valueint != cg_data_led)
+        {
+            cg_data_led = (uint8_t)pSubSubSub->valueint;
+            printf("cg_data_led = %d\n", cg_data_led);
+            /*if (cg_data_led == 0)
+            {
+                Turn_Off_LED();
+            }
+            else
+            {
+                Turn_ON_LED();
+            }*/
+        }
+    }
+
+    pSubSubSub = cJSON_GetObjectItem(pJsonJson, "net_mode"); //"net_mode"
+    if (NULL != pSubSubSub)
+    {
+
+        if ((uint8_t)pSubSubSub->valueint != net_mode)
+        {
+            net_mode = (uint8_t)pSubSubSub->valueint;
+            printf("net_mode = %d\n", net_mode);
+        }
+    }
+
+    cJSON_Delete(pJsonJson);
+    return 1;
+}
 int read_bluetooth(void)
 {
     uint8_t bluetooth_sta[512];
@@ -46,18 +125,19 @@ int read_bluetooth(void)
     {
         return 0;
     }
-    uint8_t ret = parse_objects_bluetooth((char *)bluetooth_sta);
+    int32_t ret = parse_objects_bluetooth((char *)bluetooth_sta); //uint8_t ret = parse_objects_bluetooth((char *)bluetooth_sta);
     if ((ret == BLU_PWD_REFUSE) || (ret == BLU_JSON_FORMAT_ERROR))
     {
         return 0;
     }
+    //return 1;
     else
     {
         return ret;
     }
 }
 
-esp_err_t parse_objects_bluetooth(char *blu_json_data)
+int32_t parse_objects_bluetooth(char *blu_json_data) //esp_err_t parse_objects_bluetooth(char *blu_json_data)
 {
     cJSON *cjson_blu_data_parse = NULL;
     cJSON *cjson_blu_data_parse_command = NULL;
@@ -75,14 +155,16 @@ esp_err_t parse_objects_bluetooth(char *blu_json_data)
 
         return 0;
     }
-
-    //数据包包含NULL则直接返回error
-    /*if (strstr(blu_json_data, "null") != NULL) //需要解析的字符串内含有null
-        {
-                printf("there is null in blu data\r\n");
-                
-                return BLU_PWD_REFUSE;
-        }*/
+    /*xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, 10000 / portTICK_RATE_MS); //10S后仍然未连接上WIFI
+    if (wifi_connect_sta == connect_Y)
+    {
+        need_reactivate = 1;
+        return http_activate();
+    }
+    else
+    {
+        return BLU_WIFI_ERR;
+    }*/
 
     cjson_blu_data_parse = cJSON_Parse(blu_json_data);
     if (cjson_blu_data_parse == NULL) //如果数据包不为JSON则退出
@@ -116,7 +198,6 @@ esp_err_t parse_objects_bluetooth(char *blu_json_data)
         if (cjson_blu_data_parse_wifissid == NULL)
         {
             return BLU_NO_WIFI_SSID;
-            printf("BLU_NO_WIFI_SSID1\r\n");
         }
         else
         {
@@ -124,12 +205,14 @@ esp_err_t parse_objects_bluetooth(char *blu_json_data)
             {
                 //return BLU_NO_WIFI_SSID;
                 printf("BLU_NO_WIFI_SSID2\r\n");
+                a = 0;
             }
             else
             {
                 bzero(wifi_data.wifi_ssid, sizeof(wifi_data.wifi_ssid));
                 strcpy(wifi_data.wifi_ssid, cjson_blu_data_parse_wifissid->valuestring);
                 printf("wifi ssid=%s\r\n", cjson_blu_data_parse_wifissid->valuestring);
+                a = 1;
             }
         }
 
@@ -137,13 +220,11 @@ esp_err_t parse_objects_bluetooth(char *blu_json_data)
         if (cjson_blu_data_parse_wifipwd == NULL)
         {
             return BLU_NO_WIFI_PWD;
-            printf("BLU_NO_WIFI_PWD1\r\n");
         }
         else
         {
             if (cjson_blu_data_parse_wifipwd->valuestring == (void *)0)
             {
-                //return BLU_NO_WIFI_PWD;
                 printf("BLU_NO_WIFI_PWD2\r\n");
             }
             else
@@ -151,6 +232,7 @@ esp_err_t parse_objects_bluetooth(char *blu_json_data)
                 bzero(wifi_data.wifi_pwd, sizeof(wifi_data.wifi_pwd));
                 strcpy(wifi_data.wifi_pwd, cjson_blu_data_parse_wifipwd->valuestring);
                 printf("wifi pwd=%s\r\n", cjson_blu_data_parse_wifipwd->valuestring);
+                b = 1;
             }
         }
 
@@ -163,7 +245,6 @@ esp_err_t parse_objects_bluetooth(char *blu_json_data)
         {
             if (cjson_blu_data_parse_ob->valuestring == (void *)0)
             {
-                //return BLU_NO_S2;
                 printf("BLU_NO_S2\r\n");
             }
             else
@@ -186,7 +267,6 @@ esp_err_t parse_objects_bluetooth(char *blu_json_data)
         {
             if (cjson_blu_data_parse_ob->valuestring == (void *)0)
             {
-                //return BLU_NO_E2;
                 printf("BLU_NO_E2\r\n");
             }
             else
@@ -228,8 +308,21 @@ esp_err_t parse_objects_bluetooth(char *blu_json_data)
                 ob_blu_json.Switch = cjson_blu_data_parse_ob->valueint;
             }
             //initialise_wifi(cjson_blu_data_parse_wifissid->valuestring, cjson_blu_data_parse_wifipwd->valuestring); //重新初始化WIFI
-            blu_ret = BLU_COMMAND_SWITCH;
         }
+    }
+
+    if ((a == 1) && (b == 1)) //有网络
+    {
+        initialise_wifi(cjson_blu_data_parse_wifissid->valuestring, cjson_blu_data_parse_wifipwd->valuestring); //重新初始化WIFI
+        blu_ret = BLU_RESULT_SUCCESS;
+        start_read_blue_mode = BLU_RESULT_SUCCESS;
+        printf("BLU_RESULT_SUCCESS\r\n");
+    }
+    else if (a == 0)
+    {
+        blu_ret = BLU_RESULT_SUCCESS;
+        start_read_blue_mode = BLU_COMMAND_CALCULATION;
+        printf("BLU_COMMAND_CALCULATION\r\n");
     }
 
     cJSON_Delete(cjson_blu_data_parse);
@@ -244,6 +337,7 @@ esp_err_t parse_objects_http_active(char *http_json_data)
     cJSON *json_data_parse_time_value = NULL;
     cJSON *json_data_parse_channel_channel_write_key = NULL;
     cJSON *json_data_parse_channel_channel_id_value = NULL;
+    cJSON *json_data_parse_channel_metadata = NULL;
     //cJSON *json_data_parse_command_value = NULL;
     cJSON *json_data_parse_channel_value = NULL;
     //char *json_print;
@@ -293,7 +387,9 @@ esp_err_t parse_objects_http_active(char *http_json_data)
 
             json_data_parse_channel_channel_write_key = cJSON_GetObjectItem(json_data_parse_channel_value, "write_key");
             json_data_parse_channel_channel_id_value = cJSON_GetObjectItem(json_data_parse_channel_value, "channel_id");
+            json_data_parse_channel_metadata = cJSON_GetObjectItem(json_data_parse_channel_value, "metadata");
 
+            Parse_metadata(json_data_parse_channel_metadata->valuestring);
             //printf("api key=%s\r\n", json_data_parse_channel_channel_write_key->valuestring);
             //printf("channel_id=%s\r\n", json_data_parse_channel_channel_id_value->valuestring);
 
@@ -610,7 +706,7 @@ esp_err_t parse_objects_mqtt(char *mqtt_json_data)
     return 1;
 }
 
-void create_http_json(uint8_t post_status, creat_json *pCreat_json)
+void create_http_json(creat_json *pCreat_json)
 {
     printf("INTO CREATE_HTTP_JSON\r\n");
     //creat_json *pCreat_json = malloc(sizeof(creat_json));

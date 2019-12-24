@@ -28,6 +28,7 @@
 
 char ble_dev_pwd[16];
 uint8_t start_read_blue_ret;
+uint8_t start_read_blue_mode;
 
 void ble_app_start(void);
 void gap_init(void);
@@ -40,13 +41,14 @@ typedef enum
     BLU_JSON_FORMAT_ERROR,
     BLU_RESULT_SUCCESS,
     BLU_PWD_REFUSE,
+    BLU_WRITE_FLASH_OVER,
     BLU_NO_WIFI_SSID,
     BLU_NO_WIFI_PWD,
+    BLU_WIFI_ERR,
     BLU_NO_S2,
     BLU_NO_E2,
     BLU_COMMAND_SWITCH,
-    BLU_COMMAND_CALCULATION,
-    BLU_WIFI_ERR
+    BLU_COMMAND_CALCULATION
 
 } BLU_error_info;
 

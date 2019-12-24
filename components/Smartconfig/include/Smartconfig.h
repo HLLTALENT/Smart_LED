@@ -18,4 +18,12 @@ uint8_t WifiStatus;
 uint8_t wifi_status;
 extern uint8_t Wifi_ErrCode; //7：密码错误8：未找到指定wifi
 
+#define connect_Y 1
+#define connect_N 2
+#define turn_on 1
+#define turn_off 2
+
+extern uint8_t bl_flag;          //蓝牙配网模式
+extern uint8_t wifi_connect_sta; //wifi连接状态
+
 #endif

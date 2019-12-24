@@ -513,7 +513,7 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
                         {
                                 bzero(buf, sizeof(buf));
                                 memcpy(buf, param->write.value, param->write.len);
-                                esp_err_t ret = parse_objects_bluetooth(buf);
+                                int32_t ret = parse_objects_bluetooth(buf);//esp_err_t ret = parse_objects_bluetooth(buf);
 
                                 printf("parse_objects_bluetooth return = %d \n", ret);
 
@@ -521,37 +521,32 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
                                 {
                                         bzero(BleRespond, sizeof(BleRespond));
                                         strcpy(BleRespond, "{\"result\":\"error\",\"code\":100}");
+                                        printf("解析蓝牙格式错误");
                                 }
 
-                                else if (ret == BLU_WIFI_ERR) //WIFI连接错误
+                               else if (ret == 1) //解析蓝牙正确且按新参数配置，存储eeprom
                                 {
-                                        bzero(BleRespond, sizeof(BleRespond));
-                                        if (Wifi_ErrCode == 7) //密码错误
-                                        {
-                                                strcpy(BleRespond, "{\"result\":\"error\",\"code\":201}");
-                                        }
-                                        else if (Wifi_ErrCode == 8) //找不到wifi
-                                        {
-                                                strcpy(BleRespond, "{\"result\":\"error\",\"code\":202}");
-                                        }
-                                        else //其他
-                                        {
-                                                strcpy(BleRespond, "{\"result\":\"error\",\"code\":203}");
-                                        }
+                                    bzero(BleRespond, sizeof(BleRespond));
+                                    // strcpy(BleRespond, "{\"result\":\"success\",\"code\":0}");
+                                    strcpy(BleRespond, "{\"result\":\"success\"}");
+                                    printf("{\"result\":\"success\"} \n");
+
+                                    uint8_t zerobuf[256] = "\0";
+                                    E2prom_BluWrite(0x00, (uint8_t *)zerobuf, 256);
+                                    E2prom_BluWrite(0x00, (uint8_t *)buf, param->write.len);
+                                    Ble_mes_status = BLEOK;
                                 }
-                                else //解析蓝牙正确且按新参数配置，存储eeprom
+                                else if (ret == BLU_WIFI_ERR) //WIFI连接失败
                                 {
-                                        bzero(BleRespond, sizeof(BleRespond));
-                                        // strcpy(BleRespond, "{\"result\":\"success\",\"code\":0}");
-                                        strcpy(BleRespond, "{\"result\":\"success\"}");
-                                        printf("{\"result\":\"success\"} \n");
-
-                                        uint8_t zerobuf[256] = "\0";
-                                        E2prom_BluWrite(0x00, (uint8_t *)zerobuf, 256);
-                                        E2prom_BluWrite(0x00, (uint8_t *)buf, param->write.len);
-                                        Ble_mes_status = BLEOK;
-
+                                    ESP_LOGI("BLE", "Wifi_ErrCode=%d", Wifi_ErrCode);
+                                    bzero(BleRespond, sizeof(BleRespond));
+                                    sprintf(BleRespond, "{\"result\":\"error\",\"code\":%d}", Wifi_ErrCode);
                                 }
+                                else //激活失败
+                                {
+                                    bzero(BleRespond, sizeof(BleRespond));
+                                    sprintf(BleRespond, "{\"result\":\"error\",\"code\":%d}", ret);
+                                }      
                         }
                 }
                 example_write_event_env(gatts_if, &a_prepare_write_env, param);
@@ -874,7 +869,7 @@ void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp
 
 void ble_app_start(void)
 {
-
+        bl_flag = 1;
         esp_err_t ret;
 
         ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));

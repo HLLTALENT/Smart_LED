@@ -350,7 +350,7 @@ void app_main(void)
             }
         }
     }
-    if (start_read_blue_ret == BLU_RESULT_SUCCESS) //全功能版本
+    if (start_read_blue_mode == BLU_RESULT_SUCCESS) //全功能版本
     {
 
         /*step3 判断是否有API-KEY和channel-id****/
@@ -393,8 +393,9 @@ void app_main(void)
         initialise_mqtt();
     }
 
-    else
+    else if (start_read_blue_mode == BLU_COMMAND_CALCULATION) //本地计算版本
     {
+        esp_wifi_stop();
         /*******************************timer 1s init**********************************************/
         esp_err_t err = esp_timer_create(&timer_periodic_arg, &timer_periodic_handle);
         err = esp_timer_start_periodic(timer_periodic_handle, 200000); //创建定时器，单位us，定时200ms

@@ -21,15 +21,16 @@
 #include "Bluetooth.h"
 #include "Json_parse.h"
 
+#define TAG "User_Wifi" //打印的tag
+
 wifi_config_t s_staconf;
+EventGroupHandle_t wifi_event_group;
+
+uint8_t wifi_connect_sta = connect_N;
 uint8_t wifi_status;
 uint8_t Wifi_ErrCode = 0;
+uint8_t bl_flag = 0; //蓝牙配网模式
 
-enum wifi_connect_sta
-{
-    connect_Y = 1,
-    connect_N = 2,
-};
 uint8_t wifi_con_sta = 0;
 static esp_err_t event_handler(void *ctx, system_event_t *event)
 {
@@ -40,6 +41,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
         break;
     case SYSTEM_EVENT_STA_GOT_IP:
         xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
+        wifi_connect_sta = connect_Y;
         /*if (work_status != WORK_INIT)
         {
             if ((work_status == WORK_WALLKEY) || (work_status == WORK_HAND))
@@ -51,18 +53,36 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
                 Led_Status = LED_STA_LOCAL;
             }
         }*/
-
         //Led_Status=LED_STA_INIT;
         break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
-        esp_wifi_connect();
-        xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
+        ESP_LOGI(TAG, "断网");
+        Wifi_ErrCode = event->event_info.disconnected.reason;
+        if (Wifi_ErrCode >= 1 && Wifi_ErrCode <= 24) //适配APP，
+        {
+            Wifi_ErrCode += 300;
+        }
+
+        wifi_connect_sta = connect_N;
+        if (bl_flag == 1) //判断是不是要进入配网模式
+        {
+            xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
+        }
+        else
+        {
+            Led_Status = LED_STA_WIFIERR; //断网
+            xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
+            esp_wifi_connect();
+        }
+        //esp_wifi_connect();
+        //xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
         /*if (start_read_blue_ret == BLU_RESULT_SUCCESS) //在全功能版本时闪烁故障灯
         {
             Led_Status = LED_STA_WIFIERR;
         }*/
         break;
     default:
+        ESP_LOGI(TAG, "event->event_id:%d", event->event_id);
         break;
     }
     return ESP_OK;

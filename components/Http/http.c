@@ -8,6 +8,9 @@
 #define WEB_SERVER "api.ubibot.cn"
 #define WEB_PORT 80
 
+SemaphoreHandle_t xMutex_Http_Send = NULL;
+SemaphoreHandle_t Binary_Http_Send = NULL;
+
 extern const int CONNECTED_BIT;
 extern uint8_t data_read[34];
 
@@ -15,6 +18,8 @@ static char *TAG = "HTTP";
 uint32_t HTTP_STATUS = HTTP_KEY_GET;
 uint8_t six_time_count = 4;
 uint8_t need_send = 1;
+bool need_reactivate = 0;
+uint8_t post_status = POST_NOCOMMAND;
 
 struct HTTP_STA
 {
@@ -76,375 +81,256 @@ esp_timer_create_args_t http_suspend = {
     .arg = NULL,
     .name = "http_suspend"};
 
-void http_get_task(void *pvParameters)
+int32_t wifi_http_send(char *send_buff, uint16_t send_size, char *recv_buff, uint16_t recv_size)
 {
-    printf("HTTPtask\n");
+    // printf("wifi http send start!\n");
     const struct addrinfo hints = {
         .ai_family = AF_INET,
         .ai_socktype = SOCK_STREAM,
     };
-
     struct addrinfo *res;
     struct in_addr *addr;
     int32_t s = 0, r = 0;
-    //char post_date[256];
-    //char *json_data = NULL;
+
+    int err = getaddrinfo(WEB_SERVER, "80", &hints, &res); //step1：DNS域名解析
+
+    if (err != 0 || res == NULL)
+    {
+        ESP_LOGE(TAG, "DNS lookup failed err=%d res=%p", err, res);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        return -1;
+    }
+
+    /* Code to print the resolved IP.
+		Note: inet_ntoa is non-reentrant, look at ipaddr_ntoa_r for "real" code */
+    addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
+    ESP_LOGI(TAG, "DNS lookup succeeded. IP=%s", inet_ntoa(*addr));
+
+    s = socket(res->ai_family, res->ai_socktype, 0); //step2：新建套接字
+    if (s < 0)
+    {
+        ESP_LOGE(TAG, "... Failed to allocate socket. err:%d", s);
+        close(s);
+        freeaddrinfo(res);
+        vTaskDelay(4000 / portTICK_PERIOD_MS);
+        return -1;
+    }
+    ESP_LOGI(TAG, "... allocated socket");
+
+    if (connect(s, res->ai_addr, res->ai_addrlen) != 0) //step3：连接IP
+    {
+        ESP_LOGE(TAG, "... socket connect failed errno=%d", errno);
+        close(s);
+        freeaddrinfo(res);
+        vTaskDelay(4000 / portTICK_PERIOD_MS);
+        return -1;
+    }
+
+    ESP_LOGI(TAG, "... connected");
+    freeaddrinfo(res);
+
+    ESP_LOGD(TAG, "http_send_buff send_buff: %s\n", (char *)send_buff);
+    if (write(s, (char *)send_buff, send_size) < 0) //step4：发送http包
+    {
+        ESP_LOGE(TAG, "... socket send failed");
+        close(s);
+        vTaskDelay(4000 / portTICK_PERIOD_MS);
+        return -1;
+    }
+    ESP_LOGI(TAG, "... socket send success");
+    struct timeval receiving_timeout;
+    receiving_timeout.tv_sec = 5;
+    receiving_timeout.tv_usec = 0;
+    if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &receiving_timeout, //step5：设置接收超时
+                   sizeof(receiving_timeout)) < 0)
+    {
+        ESP_LOGE(TAG, "... failed to set socket receiving timeout");
+        close(s);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        return -1;
+    }
+    ESP_LOGI(TAG, "... set socket receiving timeout success");
+
+    /* Read HTTP response */
+
+    bzero((uint16_t *)recv_buff, recv_size);
+    r = read(s, (uint16_t *)recv_buff, recv_size);
+    ESP_LOGD(TAG, "r=%d,activate recv_buf=%s\r\n", r, (char *)recv_buff);
+    close(s);
+    // printf("http send end!\n");
+    return r;
+}
+
+int32_t http_send_buff(char *send_buff, uint16_t send_size, char *recv_buff, uint16_t recv_size)
+{
+    xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
+                        false, true, portMAX_DELAY); //等网络连接
+
+    xSemaphoreTake(xMutex_Http_Send, portMAX_DELAY);
+
+    int32_t ret;
+    printf("wifi send!!!\n");
+    ret = wifi_http_send(send_buff, send_size, recv_buff, recv_size);
+    xSemaphoreGive(xMutex_Http_Send);
+
+    return ret;
+}
+
+void http_get_task(void *pvParameters)
+{
     char recv_buf[1024];
-
     char build_heart_url[256];
-
-    //int json_len;
-
-    //json_data = malloc((strlen(create_http_json())));
-
-    //printf("http.GET %s\r\nhttp.POST %s\r\nhttp.WEB_URL1 %s\r\nhttp.WEB_URL2 %s\r\nhttp.HTTP_VERSION %s\r\nhttp.HOST %s\r\nhttp.USER_AHENT %s\r\nhttp.ENTER %s\r\n",
-    //       http.GET, http.POST, http.WEB_URL1, http.WEB_URL2, http.HTTP_VERSION, http.HOST, http.USER_AHENT, http.ENTER);
 
     sprintf(build_heart_url, "%s%s%s%s%s%s%s", http.GET, http.HEART_BEAT, ApiKey,
             http.HTTP_VERSION10, http.HOST, http.USER_AHENT, http.ENTER);
-    //build_get_json[512] = create_http_json();
-
-    //printf("%s\r\n %d\r\n", pCreat_json->creat_json_b, pCreat_json->creat_json_c);
-    //printf("%s", build_get_json);
-    //strncpy(build_get_json, pCreat_json->creat_json_b, pCreat_json->creat_json_c);
-    //printf("%s", json_data);
-
-    //free(json_data);
-
-    strcpy(mqtt_json_s.mqtt_mode, "1"); //��ģʽ��ֵΪ�Զ�ģʽ
-    //mqtt_json_s.mqtt_sun_condition=1;//��ʼ��Ϊ����
-
-    //mqtt_json_s.mqtt_height=0;
-    //mqtt_json_s.mqtt_angle=0;
-    //http_send_mes(POST_ALLDOWN);
-    /***�򿪶�ʱ��10s����һ��***/
-    esp_timer_create(&http_suspend, &http_suspend_p);
-    esp_timer_start_periodic(http_suspend_p, 1000 * 1000 * 10);
-    /***�򿪶�ʱ����**/
 
     while (1)
     {
         /* Wait for the callback to set the CONNECTED_BIT in the
-           event group.a
-        */
-        WifiStatus = WIFISTATUS_DISCONNET;
+		   event group.a
+		*/
         xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
                             false, true, portMAX_DELAY);
-        ESP_LOGI(TAG, "Connected to AP");
-        WifiStatus = WIFISTATUS_CONNET;
-        ESP_LOGI(TAG, "Now Work Status=%d", work_status);
-        ESP_LOGI("RAM", "Free Heap:%d,%d", esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_8BIT));
 
-        six_time_count++; //��ʱ60s
-        if (six_time_count >= 6)
+        // ESP_LOGI("heap_size", "Free Heap:%d,%d", esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_8BIT));
+        //需要把数据发送到平台
+
+        if (xSemaphoreTake(Binary_Http_Send, (fn_dp * 1000) / portTICK_PERIOD_MS) == pdTRUE)
         {
-            six_time_count = 0;
-
-            int err = getaddrinfo(WEB_SERVER, "80", &hints, &res);
-
-            if (err != 0 || res == NULL)
-            {
-                ESP_LOGE(TAG, "DNS lookup failed err=%d res=%p", err, res);
-                vTaskDelay(1000 / portTICK_PERIOD_MS);
-                continue;
-            }
-
-            /* Code to print the resolved IP.
-            Note: inet_ntoa is non-reentrant, look at ipaddr_ntoa_r for "real" code */
-            addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
-            ESP_LOGI(TAG, "DNS lookup succeeded. IP=%s", inet_ntoa(*addr));
-            //ESP_LOGI("wifi", "1free Heap:%d,%d", esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_8BIT));
-
-            s = socket(res->ai_family, res->ai_socktype, 0);
-            if (s < 0)
-            {
-                ESP_LOGE(TAG, "... Failed to allocate socket.");
-                freeaddrinfo(res);
-                vTaskDelay(1000 / portTICK_PERIOD_MS);
-                continue;
-            }
-            ESP_LOGI(TAG, "... allocated socket");
-
-            //����
-            int http_con_ret;
-            http_con_ret = connect(s, res->ai_addr, res->ai_addrlen);
-            if (http_con_ret != 0)
-            {
-                ESP_LOGE(TAG, "... socket connect failed1 errno=%d", errno);
-                vTaskDelay(1000 / portTICK_PERIOD_MS);
-                if (http_con_ret != 0)
-                {
-                    ESP_LOGE(TAG, "... socket connect failed1 errno=%d", errno);
-                    close(s);
-                    freeaddrinfo(res);
-                    //vTaskDelay(4000 / portTICK_PERIOD_MS);
-                    //continue;
-                    goto stop;
-                }
-            }
-            ESP_LOGI(TAG, "... connected");
-            freeaddrinfo(res);
-
-            /**************��������*******************************************************/
-            if (write(s, build_heart_url, strlen(build_heart_url)) < 0)
-            {
-                ESP_LOGE(TAG, "... socket send failed");
-                close(s);
-                vTaskDelay(4000 / portTICK_PERIOD_MS);
-                continue;
-            }
-            ESP_LOGI(TAG, "... heartbeat send success=\n%s", build_heart_url);
-            //ESP_LOGI("wifi", "4free Heap:%d,%d", esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_8BIT));
-
-            struct timeval receiving_timeout;
-            receiving_timeout.tv_sec = 5;
-            receiving_timeout.tv_usec = 0;
-            if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &receiving_timeout,
-                           sizeof(receiving_timeout)) < 0)
-            {
-                ESP_LOGE(TAG, "... failed to set socket receiving timeout");
-                close(s);
-                vTaskDelay(4000 / portTICK_PERIOD_MS);
-                continue;
-            }
-            ESP_LOGI(TAG, "... set socket receiving timeout success");
-            //ESP_LOGI("wifi", "5free Heap:%d,%d", esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_8BIT));
-
-            /* Read HTTP response */
-            bzero(recv_buf, sizeof(recv_buf));
-            r = read(s, recv_buf, sizeof(recv_buf) - 1);
-            printf("r=%d,hart_recv_data=%s\r\n", r, recv_buf);
-            close(s);
-            //ESP_LOGI("wifi", "6free Heap:%d,%d", esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_8BIT));
-            if (r > 0)
-            {
-                parse_objects_heart(strchr(recv_buf, '{'));
-                http_send_mes(POST_NOCOMMAND);
-            }
-            else
-            {
-                printf("hart recv 0!\r\n");
-            }
-            //ESP_LOGI("wifi", "7free Heap:%d,%d", esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_8BIT));
+            http_send_mes();
+            continue;
+            // six_time_count = 0;
         }
-    stop:
-        vTaskSuspend(httpHandle);
+
+        // if (need_reactivate == 1)
+        // {
+        //     need_reactivate = 0;
+        //     http_activate();
+        // }
+
+        // if (fn_dp > 0)
+        // {
+        //     if (six_time_count++ >= fn_dp - 1)
+        //     {
+        //         six_time_count = 0;
+
+        if ((http_send_buff(build_heart_url, 256, recv_buf, 1024)) > 0)
+        {
+            //RS485_Read();
+            //ds18b20_get_temp();
+            parse_objects_heart(strchr(recv_buf, '{'));
+            http_send_mes();
+        }
+        else
+        {
+            printf("hart recv 0!\r\n");
+        }
+        //     }
+        // }
+        // vTaskDelay(1000 / portTICK_PERIOD_MS); //1s
     }
 }
 
-//��������
-int http_activate(void)
+//激活流程
+int32_t http_activate(void)
 {
-    const struct addrinfo hints = {
-        .ai_family = AF_INET,
-        .ai_socktype = SOCK_STREAM,
-    };
-    struct addrinfo *res;
-    struct in_addr *addr;
-
-    int32_t s = 0, r = 0;
-
     char build_http[256];
     char recv_buf[1024];
 
     sprintf(build_http, "%s%s%s%s%s%s%s", http.GET, http.WEB_URL1, ProductId, http.WEB_URL2, SerialNum, http.WEB_URL3, http.ENTER);
     //http.HTTP_VERSION10, http.HOST, http.USER_AHENT, http.ENTER);
 
-    printf("build_http=%s\n", build_http);
-    while (1)
+    ESP_LOGI(TAG, "build_http=%s\n", build_http);
+
+    if (http_send_buff(build_http, 256, recv_buf, 1024) < 0)
     {
-        xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
-                            false, true, portMAX_DELAY);
-        int err = getaddrinfo(WEB_SERVER, "80", &hints, &res);
-
-        if (err != 0 || res == NULL)
-        {
-            ESP_LOGE(TAG, "DNS lookup failed err=%d res=%p", err, res);
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
-            continue;
-        }
-
-        /* Code to print the resolved IP.
-        Note: inet_ntoa is non-reentrant, look at ipaddr_ntoa_r for "real" code */
-        addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
-        ESP_LOGI(TAG, "DNS lookup succeeded. IP=%s", inet_ntoa(*addr));
-
-        s = socket(res->ai_family, res->ai_socktype, 0);
-        if (s < 0)
-        {
-            ESP_LOGE(TAG, "... Failed to allocate socket.");
-            freeaddrinfo(res);
-            vTaskDelay(1000 / portTICK_PERIOD_MS);
-            continue;
-        }
-        ESP_LOGI(TAG, "... allocated socket");
-
-        if (connect(s, res->ai_addr, res->ai_addrlen) != 0)
-        {
-            ESP_LOGE(TAG, "... socket connect failed errno=%d", errno);
-            close(s);
-            freeaddrinfo(res);
-            vTaskDelay(4000 / portTICK_PERIOD_MS);
-            continue;
-        }
-
-        ESP_LOGI(TAG, "... connected");
-        freeaddrinfo(res);
-        if (write(s, build_http, strlen(build_http)) < 0)
-        {
-            ESP_LOGE(TAG, "... socket send failed");
-            close(s);
-            vTaskDelay(4000 / portTICK_PERIOD_MS);
-            continue;
-        }
-        ESP_LOGI(TAG, "... socket send success");
-        struct timeval receiving_timeout;
-        receiving_timeout.tv_sec = 5;
-        receiving_timeout.tv_usec = 0;
-        if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &receiving_timeout,
-                       sizeof(receiving_timeout)) < 0)
-        {
-            ESP_LOGE(TAG, "... failed to set socket receiving timeout");
-            close(s);
-            vTaskDelay(4000 / portTICK_PERIOD_MS);
-            continue;
-        }
-        ESP_LOGI(TAG, "... set socket receiving timeout success");
-
-        /* Read HTTP response */
-
-        bzero(recv_buf, sizeof(recv_buf));
-        r = read(s, recv_buf, sizeof(recv_buf) - 1);
-        printf("r=%d,activate recv_buf=%s\r\n", r, recv_buf);
-        close(s);
-
-        return parse_objects_http_active(strchr(recv_buf, '{'));
-    }
-}
-
-void http_send_mes(uint8_t post_status)
-{
-    const struct addrinfo hints = {
-        .ai_family = AF_INET,
-        .ai_socktype = SOCK_STREAM,
-    };
-
-    struct addrinfo *res;
-    struct in_addr *addr;
-    char recv_buf[1024];
-    char build_po_url[512];
-    char build_po_url_json[1024];
-    int32_t s = 0, r = 0;
-    creat_json *pCreat_json1 = malloc(sizeof(creat_json));
-    //pCreat_json1->creat_json_b=malloc(1024);
-
-    //ESP_LOGI("wifi", "1free Heap:%d,%d", esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_8BIT));
-    //����POST��json��ʽ
-    create_http_json(post_status, pCreat_json1);
-
-    if (post_status == POST_NOCOMMAND) //��commID
-    {
-        sprintf(build_po_url, "%s%s%s%s%s%s%s%s%s%s%s%d%s", http.POST, http.POST_URL1, ApiKey, http.POST_URL_FIRMWARE, FIRMWARE, http.POST_URL_SSID, wifi_data.wifi_ssid,
-                http.HTTP_VERSION11, http.HOST, http.USER_AHENT, http.CONTENT_LENGTH, pCreat_json1->creat_json_c, http.ENTER);
+        return 101;
     }
     else
     {
-        sprintf(build_po_url, "%s%s%s%s%s%s%s%s%s%s%s%d%s", http.POST, http.POST_URL1, ApiKey, http.POST_URL_SSID, wifi_data.wifi_ssid, http.POST_URL_COMMAND_ID, mqtt_json_s.mqtt_command_id,
+        if (parse_objects_http_active(strchr(recv_buf, '{')))
+        {
+            return 1;
+        }
+        else
+        {
+            return 102;
+        }
+    }
+
+    // return parse_objects_http_active(strchr(recv_buf, '{'));
+}
+
+// uint8_t Last_Led_Status;
+
+void http_send_mes(void)
+{
+    int ret = 0;
+
+    char recv_buf[1024];
+    char build_po_url[512];
+    char build_po_url_json[1024];
+    char NET_NAME[35];
+    char NET_MODE[16];
+
+    // bzero(current_net_ip, sizeof(current_net_ip)); //有线网断开，不上传有线网IP
+    bzero(NET_NAME, sizeof(NET_NAME));
+    strcpy(NET_NAME, wifi_data.wifi_ssid);
+    bzero(NET_MODE, sizeof(NET_MODE));
+    strcpy(NET_MODE, http.POST_URL_SSID);
+
+    creat_json *pCreat_json1 = malloc(sizeof(creat_json)); //为 pCreat_json1 分配内存  动态内存分配，与free() 配合使用
+    //pCreat_json1->creat_json_b=malloc(1024);
+    //创建POST的json格式
+    create_http_json(pCreat_json1);
+
+    if (post_status == POST_NOCOMMAND) //无commID
+    {
+        sprintf(build_po_url, "%s%s%s%s%s%s%s%s%s%s%s%s%d%s", http.POST, http.POST_URL1, ApiKey, http.POST_URL_METADATA, http.POST_URL_FIRMWARE, FIRMWARE, NET_MODE, NET_NAME,
                 http.HTTP_VERSION11, http.HOST, http.USER_AHENT, http.CONTENT_LENGTH, pCreat_json1->creat_json_c, http.ENTER);
+        // sprintf(build_po_url, "%s%s%s%s%s%s%s%s%s%s%s%s%d%s", http.POST, http.POST_URL1, ApiKey, http.POST_URL_METADATA, http.POST_URL_FIRMWARE, FIRMWARE, http.POST_URL_SSID, NET_NAME,
+        //         http.HTTP_VERSION11, http.HOST, http.USER_AHENT, http.CONTENT_LENGTH, pCreat_json1->creat_json_c, http.ENTER);
+    }
+    else
+    {
+        post_status = POST_NOCOMMAND;
+        sprintf(build_po_url, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%d%s", http.POST, http.POST_URL1, ApiKey, http.POST_URL_METADATA, http.POST_URL_FIRMWARE, FIRMWARE, NET_MODE, NET_NAME, http.POST_URL_COMMAND_ID, mqtt_json_s.mqtt_command_id,
+                http.HTTP_VERSION11, http.HOST, http.USER_AHENT, http.CONTENT_LENGTH, pCreat_json1->creat_json_c, http.ENTER);
+        // sprintf(build_po_url, "%s%s%s%s%s%s%s%s%s%s%s%s%d%s", http.POST, http.POST_URL1, ApiKey, http.POST_URL_METADATA, http.POST_URL_SSID, NET_NAME, http.POST_URL_COMMAND_ID, mqtt_json_s.mqtt_command_id,
+        //         http.HTTP_VERSION11, http.HOST, http.USER_AHENT, http.CONTENT_LENGTH, pCreat_json1->creat_json_c, http.ENTER);
     }
 
     sprintf(build_po_url_json, "%s%s", build_po_url, pCreat_json1->creat_json_b);
 
+    // printf("JSON_test = : %s\n", pCreat_json1->creat_json_b);
+
     free(pCreat_json1);
-    printf("POSTJSON=\r\n%s\r\n", build_po_url_json);
-    //ESP_LOGI("wifi", "2free Heap:%d,%d", esp_get_free_heap_size(), heap_caps_get_free_size(MALLOC_CAP_8BIT));
+    printf("build_po_url_json =\r\n%s\r\n build end \r\n", build_po_url_json);
 
-    int err = getaddrinfo(WEB_SERVER, "80", &hints, &res);
-    if (err != 0 || res == NULL)
+    //发送并解析返回数据
+    /***********調用函數發送***********/
+
+    if (http_send_buff(build_po_url_json, 1024, recv_buf, 1024) > 0)
     {
-        ESP_LOGE(TAG, "DNS lookup failed err=%d res=%p", err, res);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-
-    /* Code to print the resolved IP.
-           Note: inet_ntoa is non-reentrant, look at ipaddr_ntoa_r for "real" code */
-    addr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
-    ESP_LOGI(TAG, "DNS lookup succeeded. IP=%s", inet_ntoa(*addr));
-
-    s = socket(res->ai_family, res->ai_socktype, 0);
-    if (s < 0)
-    {
-        ESP_LOGE(TAG, "... Failed to allocate socket.");
-        freeaddrinfo(res);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-    ESP_LOGI(TAG, "... allocated socket");
-
-    //����
-    int http_con_ret;
-    http_con_ret = connect(s, res->ai_addr, res->ai_addrlen);
-    if (http_con_ret != 0)
-    {
-        ESP_LOGE(TAG, "... socket connect failed1 errno=%d", errno);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        if (http_con_ret != 0)
-        {
-            ESP_LOGE(TAG, "... socket connect failed1 errno=%d", errno);
-            close(s);
-            freeaddrinfo(res);
-            //vTaskDelay(4000 / portTICK_PERIOD_MS);
-            //continue;
-            return;
-        }
-    }
-    ESP_LOGI(TAG, "... connected");
-    freeaddrinfo(res);
-
-    //����
-    if (write(s, build_po_url_json, strlen(build_po_url_json)) < 0)
-    {
-        ESP_LOGE(TAG, "... socket send failed");
-        close(s);
-        vTaskDelay(4000 / portTICK_PERIOD_MS);
-    }
-    ESP_LOGI(TAG, "... http socket send success");
-
-    //���ý���
-    struct timeval receiving_timeout;
-    if (work_status == WORK_HAND) //�ֶ�����ʱ�ĳ�ʱʱ�����̣������ϴ��ȴ�respondʱ��������ָ��
-    {
-        receiving_timeout.tv_sec = 0;
-        receiving_timeout.tv_usec = 100;
+        // printf("解析返回数据！\n");
+        parse_objects_http_respond(strchr(recv_buf, '{'));
     }
     else
     {
-        receiving_timeout.tv_sec = 5;
-        receiving_timeout.tv_usec = 0;
-    }
-    if (setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &receiving_timeout,
-                   sizeof(receiving_timeout)) < 0)
-    {
-        ESP_LOGE(TAG, "... failed to set socket receiving timeout");
-        close(s);
-        vTaskDelay(4000 / portTICK_PERIOD_MS);
-    }
-    ESP_LOGI(TAG, "... set socket receiving timeout success");
-
-    /* Read HTTP response */
-    //����HTTP����
-    bzero(recv_buf, sizeof(recv_buf));
-    r = read(s, recv_buf, sizeof(recv_buf) - 1);
-    printf("r=%d,recv=%s\r\n", r, recv_buf);
-    close(s);
-
-    //������������
-    if (r > 0)
-    {
-        parse_objects_http_respond(strchr(recv_buf, '{'));
+        printf("send return : %d \n", ret);
     }
 }
 
 void initialise_http(void)
 {
-    xTaskCreate(&http_get_task, "http_get_task", 8192, NULL, 10, &httpHandle);
+    xMutex_Http_Send = xSemaphoreCreateMutex(); //创建HTTP发送互斥信号
+    Binary_Http_Send = xSemaphoreCreateBinary();
+
+    /*while (http_activate() < 0) //激活
+    {
+        ESP_LOGE(TAG, "activate fail\n");
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+    }*/
+
+    xTaskCreate(&http_get_task, "http_get_task", 8192, NULL, 6, &httpHandle);
 }

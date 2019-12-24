@@ -36,12 +36,24 @@ extern uint8_t need_send;
 
 void initialise_http(void);
 
-void http_send_mes(uint8_t post_status);
+void http_send_mes(void);
 int http_activate(void);
+
+extern uint8_t post_status;
+uint8_t human_status;
+TaskHandle_t httpHandle;
 
 #define HTTP_STA_SERIAL_NUMBER 0x00
 #define HTTP_KEY_GET 0x01
 #define HTTP_KEY_NOT_GET 0x02
+
+//需要发送的二值信号量
+extern SemaphoreHandle_t Binary_Http_Send;
+
+esp_timer_handle_t http_timer_suspend_p;
+// extern uint8_t Last_Led_Status;
+// extern bool need_send;
+extern bool need_reactivate;
 /*
 typedef enum HTTP_SEND_STA
 {
