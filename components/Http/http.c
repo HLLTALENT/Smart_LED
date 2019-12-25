@@ -1,21 +1,35 @@
+#include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+#include "freertos/semphr.h"
+#include "esp_system.h"
+#include "esp_wifi.h"
+#include "esp_event_loop.h"
+#include "esp_log.h"
+#include "nvs_flash.h"
+
 #include "Http.h"
 #include "nvs.h"
 #include "Json_parse.h"
 #include "E2prom.h"
 #include "Bluetooth.h"
 #include "Led.h"
-
-#define WEB_SERVER "api.ubibot.cn"
-#define WEB_PORT 80
+#include "Smartconfig.h"
+#include "lwip/sockets.h"
+#include "lwip/sys.h"
+#include "lwip/netdb.h"
+#include "lwip/dns.h"
 
 SemaphoreHandle_t xMutex_Http_Send = NULL;
 SemaphoreHandle_t Binary_Http_Send = NULL;
 
 extern const int CONNECTED_BIT;
 extern uint8_t data_read[34];
+char current_net_ip[20]; //当前内网IP，用于上传
 
 static char *TAG = "HTTP";
-uint32_t HTTP_STATUS = HTTP_KEY_GET;
+//uint32_t HTTP_STATUS = HTTP_KEY_GET;
 uint8_t six_time_count = 4;
 uint8_t need_send = 1;
 bool need_reactivate = 0;
@@ -69,7 +83,7 @@ struct HTTP_STA
           "\r\n\r\n"};
 
 TaskHandle_t httpHandle = NULL;
-esp_timer_handle_t http_suspend_p = 0;
+/*esp_timer_handle_t http_suspend_p = 0;
 
 void http_suspends(void *arg)
 {
@@ -79,11 +93,11 @@ void http_suspends(void *arg)
 esp_timer_create_args_t http_suspend = {
     .callback = &http_suspends,
     .arg = NULL,
-    .name = "http_suspend"};
+    .name = "http_suspend"};*/
 
 int32_t wifi_http_send(char *send_buff, uint16_t send_size, char *recv_buff, uint16_t recv_size)
 {
-    // printf("wifi http send start!\n");
+    printf("wifi http send start!\n");
     const struct addrinfo hints = {
         .ai_family = AF_INET,
         .ai_socktype = SOCK_STREAM,
@@ -166,12 +180,12 @@ int32_t http_send_buff(char *send_buff, uint16_t send_size, char *recv_buff, uin
     xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
                         false, true, portMAX_DELAY); //等网络连接
 
-    xSemaphoreTake(xMutex_Http_Send, portMAX_DELAY);
+    //xSemaphoreTake(xMutex_Http_Send, portMAX_DELAY);
 
     int32_t ret;
     printf("wifi send!!!\n");
     ret = wifi_http_send(send_buff, send_size, recv_buff, recv_size);
-    xSemaphoreGive(xMutex_Http_Send);
+    //xSemaphoreGive(xMutex_Http_Send);
 
     return ret;
 }
@@ -286,7 +300,7 @@ void http_send_mes(void)
 
     if (post_status == POST_NOCOMMAND) //无commID
     {
-        sprintf(build_po_url, "%s%s%s%s%s%s%s%s%s%s%s%s%d%s", http.POST, http.POST_URL1, ApiKey, http.POST_URL_METADATA, http.POST_URL_FIRMWARE, FIRMWARE, NET_MODE, NET_NAME,
+        sprintf(build_po_url, "%s%s%s%s%s%s%s%s%s%s%s%s%s%d%s", http.POST, http.POST_URL1, ApiKey, http.POST_URL_METADATA, http.POST_URL_FIRMWARE, FIRMWARE, current_net_ip, NET_MODE, NET_NAME,
                 http.HTTP_VERSION11, http.HOST, http.USER_AHENT, http.CONTENT_LENGTH, pCreat_json1->creat_json_c, http.ENTER);
         // sprintf(build_po_url, "%s%s%s%s%s%s%s%s%s%s%s%s%d%s", http.POST, http.POST_URL1, ApiKey, http.POST_URL_METADATA, http.POST_URL_FIRMWARE, FIRMWARE, http.POST_URL_SSID, NET_NAME,
         //         http.HTTP_VERSION11, http.HOST, http.USER_AHENT, http.CONTENT_LENGTH, pCreat_json1->creat_json_c, http.ENTER);
@@ -294,7 +308,7 @@ void http_send_mes(void)
     else
     {
         post_status = POST_NOCOMMAND;
-        sprintf(build_po_url, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%d%s", http.POST, http.POST_URL1, ApiKey, http.POST_URL_METADATA, http.POST_URL_FIRMWARE, FIRMWARE, NET_MODE, NET_NAME, http.POST_URL_COMMAND_ID, mqtt_json_s.mqtt_command_id,
+        sprintf(build_po_url, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%d%s", http.POST, http.POST_URL1, ApiKey, http.POST_URL_METADATA, http.POST_URL_FIRMWARE, FIRMWARE, current_net_ip, NET_MODE, NET_NAME, http.POST_URL_COMMAND_ID, mqtt_json_s.mqtt_command_id,
                 http.HTTP_VERSION11, http.HOST, http.USER_AHENT, http.CONTENT_LENGTH, pCreat_json1->creat_json_c, http.ENTER);
         // sprintf(build_po_url, "%s%s%s%s%s%s%s%s%s%s%s%s%d%s", http.POST, http.POST_URL1, ApiKey, http.POST_URL_METADATA, http.POST_URL_SSID, NET_NAME, http.POST_URL_COMMAND_ID, mqtt_json_s.mqtt_command_id,
         //         http.HTTP_VERSION11, http.HOST, http.USER_AHENT, http.CONTENT_LENGTH, pCreat_json1->creat_json_c, http.ENTER);
@@ -326,11 +340,11 @@ void initialise_http(void)
     xMutex_Http_Send = xSemaphoreCreateMutex(); //创建HTTP发送互斥信号
     Binary_Http_Send = xSemaphoreCreateBinary();
 
-    /*while (http_activate() < 0) //激活
+    while (http_activate() < 0) //激活
     {
         ESP_LOGE(TAG, "activate fail\n");
         vTaskDelay(2000 / portTICK_PERIOD_MS);
-    }*/
+    }
 
-    xTaskCreate(&http_get_task, "http_get_task", 8192, NULL, 6, &httpHandle);
+    xTaskCreate(&http_get_task, "http_get_task", 11264, NULL, 6, &httpHandle);
 }

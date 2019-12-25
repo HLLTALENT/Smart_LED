@@ -270,7 +270,7 @@ void app_main(void)
     nvs_flash_init();
     //ESP_ERROR_CHECK(nvs_flash_init());
 
-    WifiStatus = WIFISTATUS_DISCONNET;
+    //WifiStatus = WIFISTATUS_DISCONNET;
     strcpy(mqtt_json_s.mqtt_mode, "1");
     Ble_need_restart = 0;
 
@@ -321,94 +321,23 @@ void app_main(void)
             vTaskDelay(500 / portTICK_RATE_MS);
         }
     }
-    strncpy(ble_dev_pwd, SerialNum + 1, 4);
-    printf("ble_dev_pwd=%s\n", ble_dev_pwd);
 
     ble_app_start();
     init_wifi();
 
-    //清空蓝牙配置信息
-    //uint8_t zerobuf[256]="\0";
-    //E2prom_BluWrite(0x00, (uint8_t *)zerobuf, 256);
-    /*step2 判断是否有蓝牙配置信息****/
-
-    start_read_blue_ret = read_bluetooth();
-    printf("start_read_blue_ret=%d\n", start_read_blue_ret);
-    if (start_read_blue_ret == 0) //未获取到蓝牙配置信息
+    /*******************************timer 1s init**********************************************/
+    esp_err_t err = esp_timer_create(&timer_periodic_arg, &timer_periodic_handle);
+    err = esp_timer_start_periodic(timer_periodic_handle, 200000); //创建定时器，单位us，定时200ms
+    if (err != ESP_OK)
     {
-        printf("no Ble message!waiting for ble message\n");
-        Ble_mes_status = BLEERR;
-        while (1)
-        {
-            //故障灯闪烁
-            Led_Status = LED_STA_TOUCH;
-            vTaskDelay(500 / portTICK_RATE_MS);
-            //待蓝牙配置正常后，退出
-            if (Ble_mes_status == BLEOK)
-            {
-                break;
-            }
-        }
-    }
-    if (start_read_blue_mode == BLU_RESULT_SUCCESS) //全功能版本
-    {
-
-        /*step3 判断是否有API-KEY和channel-id****/
-        E2prom_Read(0x00, (uint8_t *)ApiKey, 32);
-        printf("readApiKey=%s\n", ApiKey);
-        E2prom_Read(0x20, (uint8_t *)ChannelId, 16);
-        printf("readChannelId=%s\n", ChannelId);
-        if ((strlen(SerialNum) == 0) || (strlen(ChannelId) == 0)) //未获取到API-KEY，和channelid进行激活流程
-        {
-
-            printf("no ApiKey or channelId!\n");
-
-            while (http_activate() == 0) //激活失败
-            {
-                vTaskDelay(10000 / portTICK_RATE_MS);
-                printf("激活失败!\n");
-            }
-
-            //激活成功
-            E2prom_Read(0x00, (uint8_t *)ApiKey, 32);
-            printf("ApiKey=%s\n", ApiKey);
-            E2prom_Read(0x20, (uint8_t *)ChannelId, 16);
-            printf("ChannelId=%s\n", ChannelId);
-        }
-
-        /*******************************timer 1s init**********************************************/
-        esp_err_t err = esp_timer_create(&timer_periodic_arg, &timer_periodic_handle);
-        err = esp_timer_start_periodic(timer_periodic_handle, 200000); //创建定时器，单位us，定时200ms
-        if (err != ESP_OK)
-        {
-            printf("timer periodic create err code:%d\n", err);
-        }
-
-        xTaskCreate(Human_Task, "Human_Task", 8192, NULL, 10, NULL);
-        xTaskCreate(&opt3001_task, "opt3001_task", 4096, NULL, 10, NULL);
-        //xTaskCreate(Wallkey_Read_Task, "Wallkey_Read_Task", 2048, NULL, 4, NULL);
-        //xTaskCreate(Led_Time_Ctl_Task, "Led_Time_Ctl_Task", 2048, NULL, 9, NULL);
-
-        initialise_http();
-        initialise_mqtt();
+        printf("timer periodic create err code:%d\n", err);
     }
 
-    else if (start_read_blue_mode == BLU_COMMAND_CALCULATION) //本地计算版本
-    {
-        esp_wifi_stop();
-        /*******************************timer 1s init**********************************************/
-        esp_err_t err = esp_timer_create(&timer_periodic_arg, &timer_periodic_handle);
-        err = esp_timer_start_periodic(timer_periodic_handle, 200000); //创建定时器，单位us，定时200ms
-        if (err != ESP_OK)
-        {
-            printf("timer periodic create err code:%d\n", err);
-        }
+    xTaskCreate(Human_Task, "Human_Task", 8192, NULL, 10, NULL);
+    xTaskCreate(&opt3001_task, "opt3001_task", 4096, NULL, 10, NULL);
 
-        xTaskCreate(Human_Task, "Human_Task", 8192, NULL, 10, &Human_Handle);
-        xTaskCreate(&opt3001_task, "opt3001_task", 4096, NULL, 10, NULL);
-        //xTaskCreate(Wallkey_Read_Task, "Wallkey_Read_Task", 2048, NULL, 12, NULL);
-    }
-
-    //xTaskCreate(Lunchbreak_Task, "Lunchbreak_Task", 2048, NULL, 11, NULL);
-    //xTaskCreate(Led_Task, "Led_Task", 2048, NULL, 11, NULL);
-} //}
+    xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
+                        false, true, portMAX_DELAY); //等待网络连接、
+    initialise_http();
+    initialise_mqtt();
+}

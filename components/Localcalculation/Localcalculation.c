@@ -19,6 +19,7 @@ float H = 1.5; //高度
 float a;       //系数1
 float b;       //系数2
 float Y;       //照度
+float Y1;      //无人照度
 uint64_t Z;    //占空比
 uint64_t Z1;
 float y; //照度差
@@ -66,10 +67,11 @@ void Localcalculation(float lightX, uint16_t color_temp, int fade_time)
     a = 3.8178 * H + 2.9131;
     Z1 = Led_Color_CTL(color_temp, fade_time);
     printf("Z1=%lld\r\n", Z1);
+
+    Y1 = (15.6 * H * H - 63 * H + 76.565) * Z1;
     Y = a * (lightX - b * Z1) + ((15.6 * H * H - 63 * H + 76.565) * Z1);
     y = 500 - Y;
     printf("Y=%f\r\n", Y);
-    mqtt_json_s.mqtt_Y = Y;
 
     Z = Z1 + y / (15.6 * H * H - 63 * H + 76.565);
     if ((Z < 0) || (Z > 60))

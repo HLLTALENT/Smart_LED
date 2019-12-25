@@ -22,6 +22,8 @@ uint64_t Z1; //新的占空比
 float Y;
 
 extern float lightX;
+extern float Y;  //照度
+extern float Y1; //无人照度
 
 extern void Localcalculation(float lightX, uint16_t color_temp, int fade_time);
 extern void Localcalculationlunchtime(int year, int month, int day, int hour, int minute, int T2_h, int T2_m, int T3_h, int T3_m);

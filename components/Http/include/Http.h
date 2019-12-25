@@ -5,6 +5,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
+#include "freertos/semphr.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
 #include "esp_event_loop.h"
@@ -32,20 +33,26 @@
 #define POST_TARGET 0X07    //HTTP直接上传目标值，用于手动切自动的状态上传
 #define POST_NOCOMMAND 0X08 //HTTP只上传平台，无commnd id
 
+#define NOHUMAN 0x00
+#define HAVEHUMAN 0x01
+
+#define WEB_SERVER "api.ubibot.cn"
+#define WEB_PORT 80
+
 extern uint8_t need_send;
 
 void initialise_http(void);
 
 void http_send_mes(void);
-int http_activate(void);
+int32_t http_activate(void);
 
 extern uint8_t post_status;
 uint8_t human_status;
 TaskHandle_t httpHandle;
 
-#define HTTP_STA_SERIAL_NUMBER 0x00
+/*#define HTTP_STA_SERIAL_NUMBER 0x00
 #define HTTP_KEY_GET 0x01
-#define HTTP_KEY_NOT_GET 0x02
+#define HTTP_KEY_NOT_GET 0x02*/
 
 //需要发送的二值信号量
 extern SemaphoreHandle_t Binary_Http_Send;
