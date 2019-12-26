@@ -268,9 +268,7 @@ void app_main(void)
 {
 
     nvs_flash_init();
-    //ESP_ERROR_CHECK(nvs_flash_init());
 
-    //WifiStatus = WIFISTATUS_DISCONNET;
     strcpy(mqtt_json_s.mqtt_mode, "1");
     Ble_need_restart = 0;
 
@@ -280,7 +278,6 @@ void app_main(void)
     SD25RTC_IIC_Init();
     sd25rtc_init();
     OPT3001_Init();
-    //vTaskDelay(10 / portTICK_RATE_MS);
     Pwm_Init();
     Human_Init();
     Led_Init();

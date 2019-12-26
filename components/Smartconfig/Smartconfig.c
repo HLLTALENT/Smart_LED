@@ -66,7 +66,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
         }
         else
         {
-            Led_Status = LED_STA_WIFIERR; //断网
+            //Led_Status = LED_STA_WIFIERR; //断网
             xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
             esp_wifi_connect();
         }
