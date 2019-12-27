@@ -128,7 +128,7 @@ int read_bluetooth(void)
         return 0;
     }
     int32_t ret = parse_objects_bluetooth((char *)bluetooth_sta); //uint8_t ret = parse_objects_bluetooth((char *)bluetooth_sta);
-    if ((ret == BLU_PWD_REFUSE) || (ret == BLU_JSON_FORMAT_ERROR))
+    if (ret == BLU_JSON_FORMAT_ERROR)
     {
         return 0;
     }
@@ -177,10 +177,10 @@ int32_t parse_objects_bluetooth(char *blu_json_data)
         need_reactivate = 1;
         return http_activate();
     }
-    else if (a == 2)
+    /*else if (a == 2)
     {
         return esp_wifi_stop();
-    }
+    }*/
     else
     {
         return BLU_WIFI_ERR;
@@ -466,7 +466,8 @@ esp_err_t parse_objects_mqtt(char *mqtt_json_data)
         json_data_command_id_parse = cJSON_GetObjectItem(json_data_parse, "command_id");
         strncpy(mqtt_json_s.mqtt_command_id, json_data_command_id_parse->valuestring, strlen(json_data_command_id_parse->valuestring));
         strncpy(mqtt_json_s.mqtt_string, json_data_string_parse->valuestring, strlen(json_data_string_parse->valuestring));
-        need_send = 1;
+        //need_send = 1;
+        post_status = POST_NORMAL;
         //printf("%s\r\n", cJSON_Print(json_data_string_parse));
         json_data_string_parse = cJSON_Parse(json_data_string_parse->valuestring);
         if (json_data_string_parse != NULL)
@@ -496,9 +497,8 @@ esp_err_t parse_objects_mqtt(char *mqtt_json_data)
                 }
 
                 else if (strcmp(json_data_action->valuestring, "command") == 0)
-
                 {
-                    if (((human_status == 1) && (strcmp(json_data_action->valuestring, "command") == 0)) || (work_status == LUNCHTIME)) //有人则退出
+                    if ((human_status == 1) || (work_status == LUNCHTIME)) //有人则退出
                     {
 
                         printf("Json Formatting error6\n");
@@ -521,6 +521,7 @@ esp_err_t parse_objects_mqtt(char *mqtt_json_data)
                                 {
                                     if (strncmp("100", json_data_stage_parse->valuestring, strlen("100")) == 0)
                                     {
+                                        work_status = WORK_HAND;
                                         strcpy(mqtt_json_s.mqtt_stage, "100");
                                         Up_Light_Status = 0;
                                         Led_UP_W(100, 10);
@@ -528,6 +529,7 @@ esp_err_t parse_objects_mqtt(char *mqtt_json_data)
                                     }
                                     if (strncmp("0", json_data_stage_parse->valuestring, strlen("0")) == 0)
                                     {
+                                        work_status = WORK_HAND;
                                         strcpy(mqtt_json_s.mqtt_stage, "0");
                                         Up_Light_Status = 1;
                                         temp_hour = -1;
@@ -541,6 +543,7 @@ esp_err_t parse_objects_mqtt(char *mqtt_json_data)
                                 {
                                     if (strncmp("100", json_data_stage_parse->valuestring, strlen("100")) == 0)
                                     {
+                                        work_status = WORK_HAND;
                                         strcpy(mqtt_json_s.mqtt_stage, "100");
                                         Down_Light_Status = 0;
                                         Led_DOWN_W(100, 10);
@@ -548,6 +551,7 @@ esp_err_t parse_objects_mqtt(char *mqtt_json_data)
                                     }
                                     if (strncmp("0", json_data_stage_parse->valuestring, strlen("0")) == 0)
                                     {
+                                        work_status = WORK_HAND;
                                         strcpy(mqtt_json_s.mqtt_stage, "0");
                                         Down_Light_Status = 1;
                                         temp_hour = -1;
@@ -559,19 +563,19 @@ esp_err_t parse_objects_mqtt(char *mqtt_json_data)
                 }
             }
         }
-        else
-        {
-            printf("Json Formatting error6\n");
-            cJSON_Delete(json_data_parse);
-            cJSON_Delete(json_data_string_parse);
-            return 0;
-        }
+    }
+    else
+    {
+        printf("Json Formatting error6\n");
         cJSON_Delete(json_data_parse);
         cJSON_Delete(json_data_string_parse);
+        return 0;
     }
+    cJSON_Delete(json_data_parse);
+    cJSON_Delete(json_data_string_parse);
+
     return 1;
 }
-
 void create_http_json(creat_json *pCreat_json)
 {
     printf("INTO CREATE_HTTP_JSON\r\n");
@@ -866,7 +870,7 @@ esp_err_t ParseTcpUartCmd(char *pcCmdBuffer)
             }
             //initialise_wifi(cjson_blu_data_parse_wifissid->valuestring, cjson_blu_data_parse_wifipwd->valuestring); //重新初始化WIFI
             //}
-            /*if ((a == 1) && (b == 1)) //有网络
+            if ((a == 1) && (b == 1)) //有网络
             {
                 initialise_wifi(); //重新初始化WIFI
                 blu_ret = BLU_RESULT_SUCCESS;
@@ -878,7 +882,7 @@ esp_err_t ParseTcpUartCmd(char *pcCmdBuffer)
                 blu_ret = BLU_RESULT_SUCCESS;
                 start_read_blue_mode = BLU_COMMAND_CALCULATION;
                 printf("BLU_COMMAND_CALCULATION\r\n");
-            }*/
+            }
 
             cJSON_Delete(pJson);
             return blu_ret;

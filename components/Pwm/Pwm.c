@@ -902,7 +902,7 @@ void Led_Time_Ctl(void)
             printf("灯自动运行1\r\n");
             //Led_Color_CTL(color_temp, ON_TIME);
         }
-        else if (human_status == NOHUMAN)
+        else if ((human_status == NOHUMAN) && (work_status != WORK_HAND))
         {
 
             Led_DOWN_W(100, 1000);
