@@ -511,50 +511,60 @@ esp_err_t parse_objects_mqtt(char *mqtt_json_data)
                         //human_status = 0;
                         auto_ctl_count = 0;
                         strcpy(mqtt_json_s.mqtt_control_char, "command");
+                        work_status = WORK_HAND;
+                        strcpy(mqtt_json_s.mqtt_mode, "0");
 
                         if ((json_data_mode_parse = cJSON_GetObjectItem(json_data_string_parse, "s_port")) != NULL)
                         {
-                            if (strncmp("port1", json_data_mode_parse->valuestring, strlen("port1")) == 0) //上灯条
+                            if (strcmp(json_data_mode_parse->valuestring, "port1") == 0) //if (strncmp("port1", json_data_mode_parse->valuestring, strlen("port1")) == 0) //上灯条
                             {
                                 strcpy(mqtt_json_s.mqtt_mode_char, "port1");
-                                if ((json_data_stage_parse = cJSON_GetObjectItem(json_data_string_parse, "set_state")) != NULL)
+                                printf("port1\r\n");
+                                if ((json_data_stage_parse = cJSON_GetObjectItem(json_data_string_parse, "set_state1")) != NULL)
                                 {
                                     if (strncmp("100", json_data_stage_parse->valuestring, strlen("100")) == 0)
                                     {
-                                        work_status = WORK_HAND;
+
                                         strcpy(mqtt_json_s.mqtt_stage, "100");
                                         Up_Light_Status = 0;
                                         Led_UP_W(100, 10);
                                         Led_UP_Y(100, 10);
+                                        printf("100\r\n");
                                     }
                                     if (strncmp("0", json_data_stage_parse->valuestring, strlen("0")) == 0)
                                     {
-                                        work_status = WORK_HAND;
+
                                         strcpy(mqtt_json_s.mqtt_stage, "0");
                                         Up_Light_Status = 1;
+                                        Down_Light_Status = 0;
                                         temp_hour = -1;
+                                        printf("0\r\n");
                                     }
                                 }
                             }
-                            if (strncmp("port2", json_data_mode_parse->valuestring, strlen("port2")) == 0)
+                            if (strcmp(json_data_mode_parse->valuestring, "port0") == 0) //(strncmp("port2", json_data_mode_parse->valuestring, strlen("port2")) == 0) //下灯条
                             {
-                                strcpy(mqtt_json_s.mqtt_mode_char, "port2");
-                                if ((json_data_stage_parse = cJSON_GetObjectItem(json_data_string_parse, "set_state")) != NULL)
+                                strcpy(mqtt_json_s.mqtt_mode_char, "port0");
+                                printf("port0\r\n");
+                                if ((json_data_stage_parse = cJSON_GetObjectItem(json_data_string_parse, "set_state0")) != NULL)
                                 {
                                     if (strncmp("100", json_data_stage_parse->valuestring, strlen("100")) == 0)
                                     {
-                                        work_status = WORK_HAND;
+
                                         strcpy(mqtt_json_s.mqtt_stage, "100");
                                         Down_Light_Status = 0;
                                         Led_DOWN_W(100, 10);
                                         Led_DOWN_Y(100, 10);
+                                        printf("100\r\n");
                                     }
                                     if (strncmp("0", json_data_stage_parse->valuestring, strlen("0")) == 0)
                                     {
-                                        work_status = WORK_HAND;
+
                                         strcpy(mqtt_json_s.mqtt_stage, "0");
                                         Down_Light_Status = 1;
+                                        Up_Light_Status = 0;
                                         temp_hour = -1;
+                                        printf("0\r\n");
                                     }
                                 }
                             }
