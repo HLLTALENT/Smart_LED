@@ -50,5 +50,6 @@ extern int8_t Wallkey_Read(uint8_t *Key_Id, int8_t Switch);
 extern void Wallkey_App(uint8_t *Key_Id, int8_t Switch);
 
 TaskHandle_t Wallkey_Read_Handle;
+extern uint8_t Wallkey_status;
 
 #endif

@@ -32,7 +32,7 @@ extern uint8_t human_status;
 
 #define LEDC_TEST_CH_NUM (4)
 //#define LEDC_TEST_DUTY         (8192)
-#define LEDC_TEST_FADE_TIME (4000)
+#define LEDC_TEST_FADE_TIME (80)
 
 uint16_t ctl_duty0;
 uint16_t ctl_duty3;

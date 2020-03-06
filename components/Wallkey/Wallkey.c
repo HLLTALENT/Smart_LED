@@ -18,8 +18,7 @@
 
 #define BUF_SIZE 100
 static const char *TAG = "WALLKEY";
-
-int8_t number = 0;
+uint8_t Wallkey_status = 0;
 
 //uint8_t Key_Id[4] = {0x99, 0x17, 0x06, 0x00}; //{0x86, 0x6d, 0x02, 0x00};
 
@@ -35,8 +34,7 @@ int8_t Wallkey_Read(uint8_t *Key_Id, int8_t Switch)
         {
             if ((data_u1[3] == Key_Id[0]) && (data_u1[4] == Key_Id[1]) && (data_u1[5] == Key_Id[2]) && (data_u1[6] == Key_Id[3])) //校验KEY ID是否满足
             {
-                //if (Switch == 0) //左边
-                //{
+
                 if (data_u1[9] == KEY_SIN)
                 {
                     ESP_LOGI(TAG, "KEY_SIN");
@@ -46,22 +44,8 @@ int8_t Wallkey_Read(uint8_t *Key_Id, int8_t Switch)
                 else if (data_u1[9] == KEY_SIN_RELEASE)
                 {
                     ESP_LOGI(TAG, "KEY_RELEASE");
-                    //vTaskDelay(1000 / portTICK_RATE_MS);
-                }
-                //}
-                /*if (data_u1[9] == KEY_SIN)
-                {
-                    ESP_LOGI(TAG, "KEY_SIN");
-                    Led_R_On();
-                    vTaskDelay(1000 / portTICK_RATE_MS);
-                    Led_Off();
-                    vTaskDelay(1000 / portTICK_RATE_MS);
                 }
 
-                else if (data_u1[9] == KEY_SIN_RELEASE)
-                {
-                    ESP_LOGI(TAG, "KEY_RELEASE");
-                }*/
                 return data_u1[9];
             }
             else
@@ -78,13 +62,14 @@ int8_t Wallkey_Read(uint8_t *Key_Id, int8_t Switch)
 static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int8_t Switch)
 {
 
-    int8_t key_read = 0;
+    int8_t key_read;
     while (1)
     {
         key_read = Wallkey_Read(ob_blu_json.WallKeyId, ob_blu_json.Switch);
         if ((key_read == KEY_SIN) && (Up_Light_Status == 1) && (Down_Light_Status == 1))
         {
             auto_ctl_count1 = 0;
+            Wallkey_status = 1;
             Led_Status = LED_STA_NOSER;
             Led_UP_W(100, 100);
             Led_UP_Y(100, 100);
@@ -98,29 +83,32 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
         else if ((key_read == KEY_SIN) && (Up_Light_Status == 0) && (Down_Light_Status == 0))
         {
             auto_ctl_count1 = 0;
+            Wallkey_status = 1;
             Led_Status = LED_STA_AUTO; //绿灯亮
-            Down_Light_Status = 1;
-            Up_Light_Status = 0;
+            Down_Light_Status = 0;     //Down_Light_Status = 1;
+            Up_Light_Status = 1;       //Up_Light_Status = 0;
             temp_hour = -1;
             printf("下亮\r\n");
         }
-        else if ((key_read == KEY_SIN) && (Down_Light_Status == 1) && (Up_Light_Status == 0))
+        else if ((key_read == KEY_SIN) && (Down_Light_Status == 0) && (Up_Light_Status == 1))
         {
             auto_ctl_count1 = 0;
+            Wallkey_status = 1;
             Led_Status = LED_STA_AUTO; //绿灯亮
             Led_UP_W(100, 100);
             Led_UP_Y(100, 100);
             Led_DOWN_W(100, 100);
             Led_DOWN_Y(100, 100);
-            Down_Light_Status = 0;
-            Up_Light_Status = 1;
+            Down_Light_Status = 1;
+            Up_Light_Status = 0;
 
             temp_hour = -1;
             printf("上亮\r\n");
         }
-        else if ((key_read == KEY_SIN) && (Down_Light_Status == 0) && (Up_Light_Status == 1))
+        else if ((key_read == KEY_SIN) && (Down_Light_Status == 1) && (Up_Light_Status == 0))
         {
             auto_ctl_count1 = 0;
+            Wallkey_status = 1;
             Led_Status = LED_STA_AUTO; //绿灯亮
 
             temp_hour = -1;
@@ -131,86 +119,6 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
         }
         //vTaskDelay(10 / portTICK_RATE_MS);
     }
-
-    /* if ((key_read == KEY_SIN) && (number == 0))
-    {
-        auto_ctl_count1 = 0;
-        //work_status = WORK_WALLKEY;
-        strcpy(mqtt_json_s.mqtt_mode, "0");
-        strcpy(mqtt_json_s.mqtt_human_char, "1");
-        Led_Status = LED_STA_AUTO; //绿灯亮
-
-        Up_Light_Status = 0;
-        Down_Light_Status = 0;
-
-        Led_UP_W(100, 500);
-        Led_UP_Y(100, 500);
-        Led_DOWN_W(100, 500);
-        Led_DOWN_Y(100, 500);
-        //temp_hour = -1;
-        //Up_Light_Status = 0;
-        //Down_Light_Status = 0;
-        number = 1;
-
-        printf("全关\r\n");
-    }
-    else if ((key_read == KEY_SIN) && (number == 1))
-    {
-        auto_ctl_count1 = 0;
-
-        //work_status = WORK_WALLKEY;
-        strcpy(mqtt_json_s.mqtt_mode, "0");
-
-        strcpy(mqtt_json_s.mqtt_human_char, "1");
-        Led_Status = LED_STA_AUTO;
-        Up_Light_Status = 1;
-        Down_Light_Status = 0;
-
-        temp_hour = -1;
-
-        number = 0;
-
-        printf("全开\r\n");
-    }
-    //printf("number=%d\r\n", number);*/
-
-    /*else if ((key_read == KEY_SIN) && (number == 2))
-    {
-        auto_ctl_count1 = 0;
-
-        //work_status = WORK_WALLKEY;
-        strcpy(mqtt_json_s.mqtt_mode, "0");
-
-        strcpy(mqtt_json_s.mqtt_human_char, "1");
-        Led_Status = LED_STA_AUTO;
-
-        Down_Light_Status = 0;
-        Up_Light_Status = 1;
-
-        Led_DOWN_W(100, 500);
-        Led_DOWN_Y(100, 500);
-        //temp_hour = -1;
-        number = 3;
-        printf("上开");
-    }
-    else if ((key_read == KEY_SIN) && (number == 3))
-    {
-        auto_ctl_count1 = 0;
-
-        //work_status = WORK_WALLKEY;
-        strcpy(mqtt_json_s.mqtt_mode, "0");
-
-        Up_Light_Status = 0;
-        //Down_Light_Status = 0;
-        Down_Light_Status = 1;
-        //temp_hour = -1;
-        Led_UP_W(100, 500);
-        Led_UP_Y(100, 500);
-        strcpy(mqtt_json_s.mqtt_mode, "1");
-        Led_Status = LED_STA_NOSER;
-        printf("下开");
-        number = 0;
-    }*/
 }
 void Wallkey_Init(void)
 {

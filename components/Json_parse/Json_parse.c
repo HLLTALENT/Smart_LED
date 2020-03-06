@@ -127,12 +127,16 @@ int read_bluetooth(void)
     {
         return 0;
     }
-    int32_t ret = parse_objects_bluetooth((char *)bluetooth_sta); //uint8_t ret = parse_objects_bluetooth((char *)bluetooth_sta);
-    if (ret == BLU_JSON_FORMAT_ERROR)
+    int32_t ret1 = parse_objects_bluetooth((char *)bluetooth_sta);   //uint8_t ret = parse_objects_bluetooth((char *)bluetooth_sta);
+    if ((ret1 == BLU_PWD_REFUSE) || (ret1 == BLU_JSON_FORMAT_ERROR)) //if (ret == BLU_JSON_FORMAT_ERROR)
     {
         return 0;
     }
-    return 1;
+    else
+    {
+        return ret1;
+    }
+    //return 1;
     /*else
     {
         return ret;
@@ -175,7 +179,7 @@ int32_t parse_objects_bluetooth(char *blu_json_data)
     if (wifi_connect_sta == connect_Y)
     {
         need_reactivate = 1;
-        return http_activate();
+        return BLU_RESULT_SUCCESS; //return http_activate();
     }
     /*else if (a == 2)
     {
@@ -495,7 +499,6 @@ esp_err_t parse_objects_mqtt(char *mqtt_json_data)
                         }
                     }
                 }
-
                 else if (strcmp(json_data_action->valuestring, "command") == 0)
                 {
                     if ((human_status == 1) || (work_status == LUNCHTIME)) //有人则退出

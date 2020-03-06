@@ -70,7 +70,7 @@ void Localcalculation(float lightX, uint16_t color_temp, int fade_time)
 
     Y1 = (15.6 * H * H - 63 * H + 76.565) * Z1;
     Y = a * (lightX - b * Z1) + ((15.6 * H * H - 63 * H + 76.565) * Z1);
-    y = 500 - Y;
+    y = 600 - Y; //500变到600
     printf("Y=%f\r\n", Y);
 
     Z = Z1 + y / (15.6 * H * H - 63 * H + 76.565);

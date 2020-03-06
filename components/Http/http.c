@@ -346,5 +346,5 @@ void initialise_http(void)
         vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
 
-    xTaskCreate(&http_get_task, "http_get_task", 11264, NULL, 6, &httpHandle);
+    xTaskCreate(&http_get_task, "http_get_task", 8192, NULL, 6, &httpHandle);
 }
