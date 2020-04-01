@@ -909,7 +909,7 @@ void Led_Time_Ctl(void)
             Led_DOWN_Y(100, 1000);
             Led_UP_W(100, 1000);
             Led_UP_Y(100, 1000);
-            Led_Status = LED_STA_NOSER;
+            //Led_Status = LED_STA_NOSER;
             printf("无人\r\n");
         }
 

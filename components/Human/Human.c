@@ -37,6 +37,7 @@ void Humanapp(void)
 
     human_gpio_value = gpio_get_level(GPIO_HUMAN); //读取人感电平
     ESP_LOGD(TAG, "human_gpio_value=%d\n", human_gpio_value);
+
     if (Wallkey_status == 0)
     {
         if (human_gpio_value == 1) //传感器报有人
@@ -53,7 +54,7 @@ void Humanapp(void)
     }
     else if (Wallkey_status == 1)
     {
-        ;
+
         //vTaskDelay(60000 / portTICK_RATE_MS);
         //human_status = 1;
     }

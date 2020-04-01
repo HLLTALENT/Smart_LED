@@ -42,6 +42,10 @@ extern uint64_t Z;
 extern uint16_t ctl_duty3;
 extern uint16_t ctl_duty2;
 
+uint8_t Light_Status;
+
+#define NOLIGHT 0x11 //状态为灯全灭
+
 void timer_periodic_cb(void *arg);
 
 esp_timer_handle_t timer_periodic_handle = 0; //定时器句柄
@@ -116,6 +120,28 @@ void timer_periodic_cb(void *arg) //200ms中断一次
                 Led_DOWN_Y(100, 1000);
                 Led_UP_W(100, 1000);
                 Led_UP_Y(100, 1000);
+                Light_Status = NOLIGHT;
+                Wallkey_status = 0;
+                printf("human_status=%d\n", human_status);
+            }
+        }
+        else if (auto_ctl_count1 < MAX_WALLKEY_TIME)
+        {
+            if (human_status == NOHUMAN)
+            {
+                Led_DOWN_W(100, 1000);
+                Led_DOWN_Y(100, 1000);
+                Led_UP_W(100, 1000);
+                Led_UP_Y(100, 1000);
+                Light_Status = NOLIGHT;
+                Wallkey_status = 0;
+                printf("human_status=%d\n", human_status);
+            }
+            if ((human_status == HAVEHUMAN) && (Led_Status == NOLIGHT))
+            {
+                Up_Light_Status = 1;
+                Down_Light_Status = 1;
+                temp_hour = -1;
                 printf("human_status=%d\n", human_status);
             }
         }
@@ -138,6 +164,28 @@ void timer_periodic_cb(void *arg) //200ms中断一次
                 Led_DOWN_Y(100, 1000);
                 Led_UP_W(100, 1000);
                 Led_UP_Y(100, 1000);
+                Light_Status = NOLIGHT;
+                Wallkey_status = 0;
+                printf("human_status=%d\n", human_status);
+            }
+        }
+        else if (auto_ctl_count < MAX_AUTO_CTL_TIME)
+        {
+            if (human_status == NOHUMAN)
+            {
+                Led_DOWN_W(100, 1000);
+                Led_DOWN_Y(100, 1000);
+                Led_UP_W(100, 1000);
+                Led_UP_Y(100, 1000);
+                Light_Status = NOLIGHT;
+                Wallkey_status = 0;
+                printf("human_status=%d\n", human_status);
+            }
+            if ((human_status == HAVEHUMAN) && (Led_Status == NOLIGHT))
+            {
+                Up_Light_Status = 1;
+                Down_Light_Status = 1;
+                temp_hour = -1;
                 printf("human_status=%d\n", human_status);
             }
         }
@@ -205,7 +253,7 @@ void timer_periodic_cb(void *arg) //200ms中断一次
         }
     }
 
-    if (nohuman_timer_count >= 300) //60s 1min
+    if (nohuman_timer_count >= 600) //60s 1min
     {
         human_status = NOHUMAN;
         nohuman_timer_count = 0;

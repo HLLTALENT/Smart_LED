@@ -79,7 +79,7 @@ void Localcalculation(float lightX, uint16_t color_temp, int fade_time)
         Z = 0;
         printf("Z=%lld\r\n", Z);
         strcpy(mqtt_json_s.mqtt_light_char, "0");
-        Led_Status = LED_STA_NOSER;
+        //Led_Status = LED_STA_NOSER;//光强时，关灯却依然自动
     }
     else if ((Z > 0) && (Z <= 60))
     {
