@@ -258,10 +258,10 @@ void timer_periodic_cb(void *arg) //200ms中断一次
         human_status = NOHUMAN;
         nohuman_timer_count = 0;
         printf("human_status=%d\n", human_status);
-        //Led_DOWN_W(100, 1000);
-        //Led_DOWN_Y(100, 1000);
-        //Led_UP_W(100, 1000);
-        //Led_UP_Y(100, 1000);
+        Led_DOWN_W(100, 1000);
+        Led_DOWN_Y(100, 1000);
+        Led_UP_W(100, 1000);
+        Led_UP_Y(100, 1000);
         //strcpy(mqtt_json_s.mqtt_human_char, "0");
         //strcpy(mqtt_json_s.mqtt_light_char, "0");
         //mqtt_json_s.mqtt_human = 0;
