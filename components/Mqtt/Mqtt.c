@@ -94,7 +94,7 @@ void initialise_mqtt(void)
     printf(mqtt_usr, "%s%s%c", "c_id=", ChannelId, '\0');
 
     const esp_mqtt_client_config_t mqtt_cfg = {
-        .uri = "mqtt://api.ubibot.cn",
+        .uri = "mqtt://mqtt.ubibot.cn",
         .event_handle = mqtt_event_handler,
         //.username = "c_id=225",
         .username = mqtt_usr,

@@ -112,7 +112,7 @@ void timer_periodic_cb(void *arg) //200ms中断一次
                 Up_Light_Status = 1;
                 Down_Light_Status = 1;
                 temp_hour = -1;
-                printf("human_status=%d\n", human_status);
+                //printf("human_status=%d\n", human_status);
             }
             else if (human_status == NOHUMAN)
             {
@@ -122,7 +122,7 @@ void timer_periodic_cb(void *arg) //200ms中断一次
                 Led_UP_Y(100, 1000);
                 Light_Status = NOLIGHT;
                 Wallkey_status = 0;
-                printf("human_status=%d\n", human_status);
+                //printf("human_status=%d\n", human_status);
             }
         }
         else if (auto_ctl_count1 < MAX_WALLKEY_TIME)
@@ -135,15 +135,15 @@ void timer_periodic_cb(void *arg) //200ms中断一次
                 Led_UP_Y(100, 1000);
                 Light_Status = NOLIGHT;
                 Wallkey_status = 0;
-                printf("human_status=%d\n", human_status);
+                //printf("human_status=%d\n", human_status);
             }
-            if ((human_status == HAVEHUMAN) && (Light_Status == NOLIGHT))
+            /*if ((human_status == HAVEHUMAN) && (Light_Status == NOLIGHT))
             {
                 Up_Light_Status = 1;
                 Down_Light_Status = 1;
                 temp_hour = -1;
                 printf("human_status=%d\n", human_status);
-            }
+            }*/
         }
 
         auto_ctl_count++; //平台指令计时
@@ -156,7 +156,7 @@ void timer_periodic_cb(void *arg) //200ms中断一次
                 Up_Light_Status = 1;
                 Down_Light_Status = 1;
                 temp_hour = -1;
-                printf("human_status=%d\n", human_status);
+                //printf("human_status=%d\n", human_status);
             }
             else if (human_status == NOHUMAN)
             {
@@ -166,7 +166,7 @@ void timer_periodic_cb(void *arg) //200ms中断一次
                 Led_UP_Y(100, 1000);
                 Light_Status = NOLIGHT;
                 Wallkey_status = 0;
-                printf("human_status=%d\n", human_status);
+                //printf("human_status=%d\n", human_status);
             }
         }
         else if (auto_ctl_count < MAX_AUTO_CTL_TIME)
@@ -179,15 +179,15 @@ void timer_periodic_cb(void *arg) //200ms中断一次
                 Led_UP_Y(100, 1000);
                 Light_Status = NOLIGHT;
                 Wallkey_status = 0;
-                printf("human_status=%d\n", human_status);
+                //printf("human_status=%d\n", human_status);
             }
-            if ((human_status == HAVEHUMAN) && (Light_Status == NOLIGHT))
+            /*if ((human_status == HAVEHUMAN) && (Light_Status == NOLIGHT))
             {
                 Up_Light_Status = 1;
                 Down_Light_Status = 1;
                 temp_hour = -1;
-                printf("human_status=%d\n", human_status);
-            }
+                //printf("human_status=%d\n", human_status);
+            }*/
         }
     }
 
@@ -258,10 +258,10 @@ void timer_periodic_cb(void *arg) //200ms中断一次
         human_status = NOHUMAN;
         nohuman_timer_count = 0;
         printf("human_status_no=%d\n", human_status);
-        Led_DOWN_W(100, 1000);
-        Led_DOWN_Y(100, 1000);
-        Led_UP_W(100, 1000);
-        Led_UP_Y(100, 1000);
+        //Led_DOWN_W(100, 1000);
+        //Led_DOWN_Y(100, 1000);
+        //Led_UP_W(100, 1000);
+        //Led_UP_Y(100, 1000);
         //strcpy(mqtt_json_s.mqtt_human_char, "0");
         //strcpy(mqtt_json_s.mqtt_light_char, "0");
         //mqtt_json_s.mqtt_human = 0;
