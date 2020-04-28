@@ -78,6 +78,13 @@ void timer_periodic_cb(void *arg) //200ms中断一次
         {
             Localcalculation(lightX, color_temp, 1000);
         }
+        else if (human_status == NOHUMAN)
+        {
+            Led_DOWN_W(100, 1000);
+            Led_DOWN_Y(100, 1000);
+            Led_UP_W(100, 1000);
+            Led_UP_Y(100, 1000);
+        }
 
         Localcalculationlunchtime(year, month, day, hour, min, ob_blu_json.T2_h, ob_blu_json.T2_m, ob_blu_json.T3_h, ob_blu_json.T3_m);
 
@@ -257,7 +264,7 @@ void timer_periodic_cb(void *arg) //200ms中断一次
     {
         human_status = NOHUMAN;
         nohuman_timer_count = 0;
-        printf("human_status_no=%d\n", human_status);
+        //printf("human_status_no=%d\n", human_status);
         //Led_DOWN_W(100, 1000);
         //Led_DOWN_Y(100, 1000);
         //Led_UP_W(100, 1000);

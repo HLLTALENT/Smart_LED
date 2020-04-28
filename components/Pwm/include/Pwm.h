@@ -16,7 +16,7 @@
 
 #define LEDC_TEST_CH_NUM (4)
 //#define LEDC_TEST_DUTY         (8192)
-#define LEDC_TEST_FADE_TIME (4000)
+#define LEDC_TEST_FADE_TIME (100)
 
 extern void Pwm_Init(void);
 extern void Led_UP_W(uint16_t duty, int fade_time);

@@ -176,7 +176,7 @@ int32_t parse_objects_bluetooth(char *blu_json_data)
     cJSON_Delete(cjson_blu_data_parse);
 
     xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, 10000 / portTICK_RATE_MS); //10S后仍然未连接上WIFI
-    if (wifi_connect_sta == connect_Y)
+    if ((wifi_connect_sta == connect_Y) || (a == 0))
     {
         need_reactivate = 1;
         return BLU_RESULT_SUCCESS; //return http_activate();
@@ -890,7 +890,7 @@ esp_err_t ParseTcpUartCmd(char *pcCmdBuffer)
                 start_read_blue_mode = BLU_RESULT_SUCCESS;
                 printf("BLU_RESULT_SUCCESS1\r\n");
             }
-            else if (a == 2)
+            else if (a == 0)
             {
                 blu_ret = BLU_RESULT_SUCCESS;
                 start_read_blue_mode = BLU_COMMAND_CALCULATION;

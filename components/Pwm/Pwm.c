@@ -32,7 +32,7 @@ extern uint8_t human_status;
 
 #define LEDC_TEST_CH_NUM (4)
 //#define LEDC_TEST_DUTY         (8192)
-#define LEDC_TEST_FADE_TIME (80)
+#define LEDC_TEST_FADE_TIME (100)
 
 uint16_t ctl_duty0;
 uint16_t ctl_duty3;
@@ -67,65 +67,29 @@ ledc_channel_config_t ledc_channel[LEDC_TEST_CH_NUM] = {
      .timer_sel = LEDC_HS_TIMER},
 
 };
-
-void Pwm_Init(void)
+void Led_UP_W(uint16_t duty, int fade_time) //上白光控制，duty0-100
 {
-    int ch;
-
-    Z1 = 0;
-
-    //vTaskDelay(5000 / portTICK_RATE_MS);
-    temp_hour = -1;
-    Up_Light_Status = 1;
-    Down_Light_Status = 1;
-
-    //color_temp = 0;
-    //color_temp = 0;
-
-    //PWM频率 5KHZ  占空比个数 0-8192
-    ledc_timer_config_t ledc_timer = {
-        .duty_resolution = LEDC_TIMER_13_BIT, // resolution of PWM duty
-        .freq_hz = 5000,                      // frequency of PWM signal
-        .speed_mode = LEDC_HS_MODE,           // timer mode
-        .timer_num = LEDC_HS_TIMER            // timer index
-    };
-    // Set configuration of timer0 for high speed channels
-    ledc_timer_config(&ledc_timer);
-
-    // Set LED Controller with previously prepared configuration
-    for (ch = 0; ch < LEDC_TEST_CH_NUM; ch++)
-    {
-        ledc_channel_config(&ledc_channel[ch]);
-    }
-
-    // Initialize fade service.
-    ledc_fade_func_install(0);
-
-    for (ch = 0; ch < LEDC_TEST_CH_NUM; ch++)
-    {
-        ledc_set_duty(ledc_channel[ch].speed_mode, ledc_channel[ch].channel, 0);
-        ledc_update_duty(ledc_channel[ch].speed_mode, ledc_channel[ch].channel);
-    }
-
-    //temp_hour = -1;
-
-    printf("led start on\r\n");
-
-    xTaskCreate(Led_Time_Ctl_Task, "Led_Time_Ctl_Task", 2048, NULL, 9, NULL);
+    uint16_t ctl_duty = 8192 - (uint16_t)(81.92 * (float)duty); //将0-100变为8192-0
+    ledc_set_fade_with_time(ledc_channel[0].speed_mode, ledc_channel[0].channel, ctl_duty, fade_time);
+    ledc_fade_start(ledc_channel[0].speed_mode, ledc_channel[0].channel, LEDC_FADE_NO_WAIT);
 }
-
-void Led_Time_Ctl_Task(void *arg)
+void Led_UP_Y(uint16_t duty, int fade_time) //上黄光控制，duty0-100
 {
-    while (1)
-    {
-        if ((Up_Light_Status == 1) || (Down_Light_Status == 1)) //|| (start_read_blue_ret == BLU_COMMAND_SWITCH) || BLU_COMMAND_CALCULATION)
-        {
-            Led_Time_Ctl();
-            //printf("灯自动运行中\r\n");
-        }
-        vTaskDelay(100 / portTICK_RATE_MS);
-    }
-    //vTaskDelete(NULL);
+    uint16_t ctl_duty = 8192 - (uint16_t)(81.92 * (float)duty); //将0-100变为8192-0
+    ledc_set_fade_with_time(ledc_channel[1].speed_mode, ledc_channel[1].channel, ctl_duty, fade_time);
+    ledc_fade_start(ledc_channel[1].speed_mode, ledc_channel[1].channel, LEDC_FADE_NO_WAIT);
+}
+void Led_DOWN_W(uint16_t duty, int fade_time) //下白光控制，duty0-100
+{
+    uint16_t ctl_duty = 8192 - (uint16_t)(81.92 * (float)duty); //将0-100变为8192-0
+    ledc_set_fade_with_time(ledc_channel[2].speed_mode, ledc_channel[2].channel, ctl_duty, fade_time);
+    ledc_fade_start(ledc_channel[2].speed_mode, ledc_channel[2].channel, LEDC_FADE_NO_WAIT);
+}
+void Led_DOWN_Y(uint16_t duty, int fade_time) //下黄光控制，duty0-100
+{
+    uint16_t ctl_duty = 8192 - (uint16_t)(81.92 * (float)duty);
+    ledc_set_fade_with_time(ledc_channel[3].speed_mode, ledc_channel[3].channel, ctl_duty, fade_time);
+    ledc_fade_start(ledc_channel[3].speed_mode, ledc_channel[3].channel, LEDC_FADE_NO_WAIT);
 }
 
 uint64_t Led_Color_CTL(uint16_t color_temp, int fade_time)
@@ -697,6 +661,20 @@ uint64_t Led_Color_CTL(uint16_t color_temp, int fade_time)
     return Z;
 }
 
+/*void Led_Time_Ctl_Task(void *arg)
+{
+    while (1)
+    {
+        if ((Up_Light_Status == 1) || (Down_Light_Status == 1) || (start_read_blue_ret == BLU_COMMAND_SWITCH) || BLU_COMMAND_CALCULATION)
+        {
+            Led_Time_Ctl();
+            //printf("灯自动运行中\r\n");
+        }
+        vTaskDelay(100 / portTICK_RATE_MS);
+    }
+    //vTaskDelete(NULL);
+}*/
+
 void Led_Time_Ctl(void)
 {
 
@@ -912,7 +890,6 @@ void Led_Time_Ctl(void)
             //Led_Status = LED_STA_NOSER;
             printf("无人\r\n");
         }
-
         else
         {
             temp_hour = hour;
@@ -926,12 +903,11 @@ void Led_Time_Ctl(void)
         //printf("color_temp2=%d\r\n", color_temp);
     }
 }
-
-/*void Led_Time_Ctl_Task(void *arg)
+void Led_Time_Ctl_Task(void *arg)
 {
     while (1)
     {
-        if ((Up_Light_Status == 1) || (Down_Light_Status == 1) || (start_read_blue_ret == BLU_COMMAND_SWITCH) || BLU_COMMAND_CALCULATION)
+        if ((Up_Light_Status == 1) || (Down_Light_Status == 1)) //|| (start_read_blue_ret == BLU_COMMAND_SWITCH) || BLU_COMMAND_CALCULATION)
         {
             Led_Time_Ctl();
             //printf("灯自动运行中\r\n");
@@ -939,29 +915,50 @@ void Led_Time_Ctl(void)
         vTaskDelay(100 / portTICK_RATE_MS);
     }
     //vTaskDelete(NULL);
-}*/
+}
 
-void Led_UP_W(uint16_t duty, int fade_time) //上白光控制，duty0-100
+void Pwm_Init(void)
 {
-    uint16_t ctl_duty = 8192 - (uint16_t)(81.92 * (float)duty); //将0-100变为8192-0
-    ledc_set_fade_with_time(ledc_channel[0].speed_mode, ledc_channel[0].channel, ctl_duty, fade_time);
-    ledc_fade_start(ledc_channel[0].speed_mode, ledc_channel[0].channel, LEDC_FADE_NO_WAIT);
-}
-void Led_UP_Y(uint16_t duty, int fade_time) //上黄光控制，duty0-100
-{
-    uint16_t ctl_duty = 8192 - (uint16_t)(81.92 * (float)duty); //将0-100变为8192-0
-    ledc_set_fade_with_time(ledc_channel[1].speed_mode, ledc_channel[1].channel, ctl_duty, fade_time);
-    ledc_fade_start(ledc_channel[1].speed_mode, ledc_channel[1].channel, LEDC_FADE_NO_WAIT);
-}
-void Led_DOWN_W(uint16_t duty, int fade_time) //下白光控制，duty0-100
-{
-    uint16_t ctl_duty = 8192 - (uint16_t)(81.92 * (float)duty); //将0-100变为8192-0
-    ledc_set_fade_with_time(ledc_channel[2].speed_mode, ledc_channel[2].channel, ctl_duty, fade_time);
-    ledc_fade_start(ledc_channel[2].speed_mode, ledc_channel[2].channel, LEDC_FADE_NO_WAIT);
-}
-void Led_DOWN_Y(uint16_t duty, int fade_time) //下黄光控制，duty0-100
-{
-    uint16_t ctl_duty = 8192 - (uint16_t)(81.92 * (float)duty);
-    ledc_set_fade_with_time(ledc_channel[3].speed_mode, ledc_channel[3].channel, ctl_duty, fade_time);
-    ledc_fade_start(ledc_channel[3].speed_mode, ledc_channel[3].channel, LEDC_FADE_NO_WAIT);
+    int ch;
+
+    Z1 = 0;
+
+    //vTaskDelay(5000 / portTICK_RATE_MS);
+    temp_hour = -1;
+    Up_Light_Status = 1;
+    Down_Light_Status = 1;
+
+    //color_temp = 0;
+    //color_temp = 0;
+
+    //PWM频率 5KHZ  占空比个数 0-8192
+    ledc_timer_config_t ledc_timer = {
+        .duty_resolution = LEDC_TIMER_13_BIT, // resolution of PWM duty
+        .freq_hz = 5000,                      // frequency of PWM signal
+        .speed_mode = LEDC_HS_MODE,           // timer mode
+        .timer_num = LEDC_HS_TIMER            // timer index
+    };
+    // Set configuration of timer0 for high speed channels
+    ledc_timer_config(&ledc_timer);
+
+    // Set LED Controller with previously prepared configuration
+    for (ch = 0; ch < LEDC_TEST_CH_NUM; ch++)
+    {
+        ledc_channel_config(&ledc_channel[ch]);
+    }
+
+    // Initialize fade service.
+    ledc_fade_func_install(0);
+
+    for (ch = 0; ch < LEDC_TEST_CH_NUM; ch++)
+    {
+        ledc_set_duty(ledc_channel[ch].speed_mode, ledc_channel[ch].channel, 0);
+        ledc_update_duty(ledc_channel[ch].speed_mode, ledc_channel[ch].channel);
+    }
+
+    //temp_hour = -1;
+
+    printf("led start on\r\n");
+
+    xTaskCreate(Led_Time_Ctl_Task, "Led_Time_Ctl_Task", 2048, NULL, 9, NULL);
 }
