@@ -123,10 +123,10 @@ void timer_periodic_cb(void *arg) //200ms中断一次
             }
             else if (human_status == NOHUMAN)
             {
-                Led_DOWN_W(100, 1000);
-                Led_DOWN_Y(100, 1000);
-                Led_UP_W(100, 1000);
-                Led_UP_Y(100, 1000);
+                Led_DOWN_W(100, 800);
+                Led_DOWN_Y(100, 800);
+                Led_UP_W(100, 800);
+                Led_UP_Y(100, 800);
                 Light_Status = NOLIGHT;
                 Wallkey_status = 0;
                 //printf("human_status=%d\n", human_status);
@@ -136,10 +136,10 @@ void timer_periodic_cb(void *arg) //200ms中断一次
         {
             if (human_status == NOHUMAN)
             {
-                Led_DOWN_W(100, 1000);
-                Led_DOWN_Y(100, 1000);
-                Led_UP_W(100, 1000);
-                Led_UP_Y(100, 1000);
+                Led_DOWN_W(100, 800);
+                Led_DOWN_Y(100, 800);
+                Led_UP_W(100, 800);
+                Led_UP_Y(100, 800);
                 Light_Status = NOLIGHT;
                 Wallkey_status = 0;
                 //printf("human_status=%d\n", human_status);
@@ -167,10 +167,10 @@ void timer_periodic_cb(void *arg) //200ms中断一次
             }
             else if (human_status == NOHUMAN)
             {
-                Led_DOWN_W(100, 1000);
-                Led_DOWN_Y(100, 1000);
-                Led_UP_W(100, 1000);
-                Led_UP_Y(100, 1000);
+                Led_DOWN_W(100, 800);
+                Led_DOWN_Y(100, 800);
+                Led_UP_W(100, 800);
+                Led_UP_Y(100, 800);
                 Light_Status = NOLIGHT;
                 Wallkey_status = 0;
                 //printf("human_status=%d\n", human_status);
@@ -180,10 +180,10 @@ void timer_periodic_cb(void *arg) //200ms中断一次
         {
             if (human_status == NOHUMAN)
             {
-                Led_DOWN_W(100, 1000);
-                Led_DOWN_Y(100, 1000);
-                Led_UP_W(100, 1000);
-                Led_UP_Y(100, 1000);
+                Led_DOWN_W(100, 800);
+                Led_DOWN_Y(100, 800);
+                Led_UP_W(100, 800);
+                Led_UP_Y(100, 800);
                 Light_Status = NOLIGHT;
                 Wallkey_status = 0;
                 //printf("human_status=%d\n", human_status);
@@ -264,6 +264,7 @@ void timer_periodic_cb(void *arg) //200ms中断一次
     {
         human_status = NOHUMAN;
         nohuman_timer_count = 0;
+        temp_hour = 0;
         //printf("human_status_no=%d\n", human_status);
         //Led_DOWN_W(100, 1000);
         //Led_DOWN_Y(100, 1000);

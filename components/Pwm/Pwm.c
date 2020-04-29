@@ -69,25 +69,25 @@ ledc_channel_config_t ledc_channel[LEDC_TEST_CH_NUM] = {
 };
 void Led_UP_W(uint16_t duty, int fade_time) //上白光控制，duty0-100
 {
-    uint16_t ctl_duty = 8192 - (uint16_t)(81.92 * (float)duty); //将0-100变为8192-0
+    uint16_t ctl_duty = 8000 - (uint16_t)(80.00 * (float)duty); //将0-100变为8000-0
     ledc_set_fade_with_time(ledc_channel[0].speed_mode, ledc_channel[0].channel, ctl_duty, fade_time);
     ledc_fade_start(ledc_channel[0].speed_mode, ledc_channel[0].channel, LEDC_FADE_NO_WAIT);
 }
 void Led_UP_Y(uint16_t duty, int fade_time) //上黄光控制，duty0-100
 {
-    uint16_t ctl_duty = 8192 - (uint16_t)(81.92 * (float)duty); //将0-100变为8192-0
+    uint16_t ctl_duty = 8000 - (uint16_t)(80.00 * (float)duty); //将0-100变为8000-0
     ledc_set_fade_with_time(ledc_channel[1].speed_mode, ledc_channel[1].channel, ctl_duty, fade_time);
     ledc_fade_start(ledc_channel[1].speed_mode, ledc_channel[1].channel, LEDC_FADE_NO_WAIT);
 }
 void Led_DOWN_W(uint16_t duty, int fade_time) //下白光控制，duty0-100
 {
-    uint16_t ctl_duty = 8192 - (uint16_t)(81.92 * (float)duty); //将0-100变为8192-0
+    uint16_t ctl_duty = 8000 - (uint16_t)(80.00 * (float)duty); //将0-100变为8000-0
     ledc_set_fade_with_time(ledc_channel[2].speed_mode, ledc_channel[2].channel, ctl_duty, fade_time);
     ledc_fade_start(ledc_channel[2].speed_mode, ledc_channel[2].channel, LEDC_FADE_NO_WAIT);
 }
 void Led_DOWN_Y(uint16_t duty, int fade_time) //下黄光控制，duty0-100
 {
-    uint16_t ctl_duty = 8192 - (uint16_t)(81.92 * (float)duty);
+    uint16_t ctl_duty = 8000 - (uint16_t)(80.00 * (float)duty);
     ledc_set_fade_with_time(ledc_channel[3].speed_mode, ledc_channel[3].channel, ctl_duty, fade_time);
     ledc_fade_start(ledc_channel[3].speed_mode, ledc_channel[3].channel, LEDC_FADE_NO_WAIT);
 }
@@ -883,10 +883,10 @@ void Led_Time_Ctl(void)
         else if ((human_status == NOHUMAN) && (work_status != WORK_HAND))
         {
 
-            Led_DOWN_W(100, 1000);
-            Led_DOWN_Y(100, 1000);
-            Led_UP_W(100, 1000);
-            Led_UP_Y(100, 1000);
+            Led_DOWN_W(100, 800);
+            Led_DOWN_Y(100, 800);
+            Led_UP_W(100, 800);
+            Led_UP_Y(100, 800);
             //Led_Status = LED_STA_NOSER;
             printf("无人\r\n");
         }
@@ -894,8 +894,8 @@ void Led_Time_Ctl(void)
         {
             temp_hour = hour;
             temp_min = min;
+            //Led_Color_CTL(color_temp, ON_TIME);
             Led_Color_CTL(color_temp, COLOR_CHANGE_TIME);
-            //Led_Color_CTL(color_temp, COLOR_CHANGE_TIME);
             strcpy(mqtt_json_s.mqtt_mode, "1");
 
             printf("灯自动运行2\r\n");
@@ -931,10 +931,10 @@ void Pwm_Init(void)
     //color_temp = 0;
     //color_temp = 0;
 
-    //PWM频率 5KHZ  占空比个数 0-8192
+    //PWM频率 5KHZ  占空比个数 0-8000
     ledc_timer_config_t ledc_timer = {
         .duty_resolution = LEDC_TIMER_13_BIT, // resolution of PWM duty
-        .freq_hz = 5000,                      // frequency of PWM signal
+        .freq_hz = 4500,                      // frequency of PWM signal
         .speed_mode = LEDC_HS_MODE,           // timer mode
         .timer_num = LEDC_HS_TIMER            // timer index
     };
