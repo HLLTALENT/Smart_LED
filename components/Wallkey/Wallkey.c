@@ -121,6 +121,7 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
         }
         //vTaskDelay(10 / portTICK_RATE_MS);
     }
+    vTaskDelete(NULL);
 }
 void Wallkey_Init(void)
 {

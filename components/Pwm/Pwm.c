@@ -69,27 +69,74 @@ ledc_channel_config_t ledc_channel[LEDC_TEST_CH_NUM] = {
 };
 void Led_UP_W(uint16_t duty, int fade_time) //上白光控制，duty0-100
 {
+    esp_err_t ret;
     uint16_t ctl_duty = 8000 - (uint16_t)(80.00 * (float)duty); //将0-100变为8000-0
-    ledc_set_fade_with_time(ledc_channel[0].speed_mode, ledc_channel[0].channel, ctl_duty, fade_time);
-    ledc_fade_start(ledc_channel[0].speed_mode, ledc_channel[0].channel, LEDC_FADE_NO_WAIT);
+    ret = ledc_set_fade_time_and_start(ledc_channel[0].speed_mode, ledc_channel[0].channel, ctl_duty, fade_time, ledc_channel[0].speed_mode);
+
+    if (ret != ESP_OK)
+    {
+        Pwm_Init();
+    }
+    else
+    {
+        printf("Led_UP_W=%d\r\n", ctl_duty);
+    }
+    //ret = ledc_set_fade_with_time(ledc_channel[0].speed_mode, ledc_channel[0].channel, ctl_duty, fade_time);
+    //ledc_fade_start(ledc_channel[0].speed_mode, ledc_channel[0].channel, LEDC_FADE_NO_WAIT);
 }
 void Led_UP_Y(uint16_t duty, int fade_time) //上黄光控制，duty0-100
 {
+    esp_err_t ret;
     uint16_t ctl_duty = 8000 - (uint16_t)(80.00 * (float)duty); //将0-100变为8000-0
-    ledc_set_fade_with_time(ledc_channel[1].speed_mode, ledc_channel[1].channel, ctl_duty, fade_time);
-    ledc_fade_start(ledc_channel[1].speed_mode, ledc_channel[1].channel, LEDC_FADE_NO_WAIT);
+    ret = ledc_set_fade_time_and_start(ledc_channel[1].speed_mode, ledc_channel[1].channel, ctl_duty, fade_time, ledc_channel[1].speed_mode);
+
+    if (ret != ESP_OK)
+    {
+        Pwm_Init();
+    }
+    else
+    {
+        printf("Led_UP_Y=%d\r\n", ctl_duty);
+    }
+    //ledc_set_fade_with_time(ledc_channel[1].speed_mode, ledc_channel[1].channel, ctl_duty, fade_time);
+    //ledc_fade_start(ledc_channel[1].speed_mode, ledc_channel[1].channel, LEDC_FADE_NO_WAIT);
+    //printf("Led_UP_Y=%d\r\n", ctl_duty);
 }
 void Led_DOWN_W(uint16_t duty, int fade_time) //下白光控制，duty0-100
 {
+    esp_err_t ret;
     uint16_t ctl_duty = 8000 - (uint16_t)(80.00 * (float)duty); //将0-100变为8000-0
-    ledc_set_fade_with_time(ledc_channel[2].speed_mode, ledc_channel[2].channel, ctl_duty, fade_time);
-    ledc_fade_start(ledc_channel[2].speed_mode, ledc_channel[2].channel, LEDC_FADE_NO_WAIT);
+    ret = ledc_set_fade_time_and_start(ledc_channel[2].speed_mode, ledc_channel[2].channel, ctl_duty, fade_time, ledc_channel[2].speed_mode);
+
+    if (ret != ESP_OK)
+    {
+        Pwm_Init();
+    }
+    else
+    {
+        printf("Led_DOWN_W=%d\r\n", ctl_duty);
+    }
+    //ledc_set_fade_with_time(ledc_channel[2].speed_mode, ledc_channel[2].channel, ctl_duty, fade_time);
+    //ledc_fade_start(ledc_channel[2].speed_mode, ledc_channel[2].channel, LEDC_FADE_NO_WAIT);
+    //printf("Led_DOWN_W=%d\r\n", ctl_duty);
 }
 void Led_DOWN_Y(uint16_t duty, int fade_time) //下黄光控制，duty0-100
 {
+    esp_err_t ret;
     uint16_t ctl_duty = 8000 - (uint16_t)(80.00 * (float)duty);
-    ledc_set_fade_with_time(ledc_channel[3].speed_mode, ledc_channel[3].channel, ctl_duty, fade_time);
-    ledc_fade_start(ledc_channel[3].speed_mode, ledc_channel[3].channel, LEDC_FADE_NO_WAIT);
+    ret = ledc_set_fade_time_and_start(ledc_channel[3].speed_mode, ledc_channel[3].channel, ctl_duty, fade_time, ledc_channel[3].speed_mode);
+
+    if (ret != ESP_OK)
+    {
+        Pwm_Init();
+    }
+    else
+    {
+        printf("Led_DOWN_Y=%d\r\n", ctl_duty);
+    }
+    //ledc_set_fade_with_time(ledc_channel[3].speed_mode, ledc_channel[3].channel, ctl_duty, fade_time);
+    //ledc_fade_start(ledc_channel[3].speed_mode, ledc_channel[3].channel, LEDC_FADE_NO_WAIT);
+    //printf("Led_DOWN_Y=%d\r\n", ctl_duty);
 }
 
 uint64_t Led_Color_CTL(uint16_t color_temp, int fade_time)
@@ -934,7 +981,7 @@ void Pwm_Init(void)
     //PWM频率 5KHZ  占空比个数 0-8000
     ledc_timer_config_t ledc_timer = {
         .duty_resolution = LEDC_TIMER_13_BIT, // resolution of PWM duty
-        .freq_hz = 4500,                      // frequency of PWM signal
+        .freq_hz = 3500,                      // frequency of PWM signal
         .speed_mode = LEDC_HS_MODE,           // timer mode
         .timer_num = LEDC_HS_TIMER            // timer index
     };
