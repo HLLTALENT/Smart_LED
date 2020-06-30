@@ -273,7 +273,7 @@ void timer_periodic_cb(void *arg) //200ms中断一次
         //strcpy(mqtt_json_s.mqtt_human_char, "0");
         //strcpy(mqtt_json_s.mqtt_light_char, "0");
         //mqtt_json_s.mqtt_human = 0;
-        //printf("human_status=%d\n", human_status);
+        printf("human_status=%d\n", human_status);
     }
 }
 
