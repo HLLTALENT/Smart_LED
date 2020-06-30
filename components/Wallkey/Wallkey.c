@@ -90,7 +90,7 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
             Down_Light_Status = 0;     //Down_Light_Status = 1;
             Up_Light_Status = 1;       //Up_Light_Status = 0;
             temp_hour = -1;
-            printf("下亮\r\n");
+            printf("上亮\r\n");
         }
         else if ((key_read == KEY_SIN) && (Down_Light_Status == 0) && (Up_Light_Status == 1) && (human_status == HAVEHUMAN))
         {
@@ -105,7 +105,7 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
             Up_Light_Status = 0;
 
             temp_hour = -1;
-            printf("上亮\r\n");
+            printf("下亮\r\n");
         }
         else if ((key_read == KEY_SIN) && (Down_Light_Status == 1) && (Up_Light_Status == 0) && (human_status == HAVEHUMAN))
         {

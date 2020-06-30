@@ -71,13 +71,13 @@ void Localcalculation(float lightX, uint16_t color_temp, int fade_time)
     Y1 = (15.6 * H * H - 63 * H + 76.565) * Z1;
     Y = a * (lightX - b * Z1) + ((15.6 * H * H - 63 * H + 76.565) * Z1);
     y = 1000 - Y; //600变到1000
-    printf("Y=%f\r\n", Y);
+    //printf("Y=%f\r\n", Y);
 
     Z = Z1 + y / (15.6 * H * H - 63 * H + 76.565);
     if ((Z < 0) || (Z >= 100))
     {
         Z = 0;
-        printf("Z=%lld\r\n", Z);
+        //printf("Z=%lld\r\n", Z);
         strcpy(mqtt_json_s.mqtt_light_char, "0");
         //Led_Status = LED_STA_NOSER;//光强时，关灯却依然自动
     }
@@ -85,7 +85,7 @@ void Localcalculation(float lightX, uint16_t color_temp, int fade_time)
     {
         strcpy(mqtt_json_s.mqtt_light_char, "1");
         //strcpy(mqtt_json_s.mqtt_human_char, "1");
-        printf("Z=%lld\r\n", Z);
+        //printf("Z=%lld\r\n", Z);
         //Led_Status = LED_STA_AUTO;
     }
     printf("lightvalue = %f\r\n", lightX);

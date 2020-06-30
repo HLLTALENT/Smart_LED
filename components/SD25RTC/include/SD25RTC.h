@@ -32,5 +32,6 @@ extern int year, month, day, hour, min, sec;
 extern void sd25rtc_init(void);
 extern uint8_t RtcWriteDate(S_Time *psRTC);
 extern void SD25RTC_IIC_Init(void);
+extern void SD25Rtc_Read(int *year, int *month, int *day, int *hour, int *min, int *sec);
 
 #endif

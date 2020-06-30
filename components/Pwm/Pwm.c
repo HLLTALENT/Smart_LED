@@ -72,10 +72,11 @@ void Led_UP_W(uint16_t duty, int fade_time) //上白光控制，duty0-100
     esp_err_t ret;
     uint16_t ctl_duty = 8000 - (uint16_t)(80.00 * (float)duty); //将0-100变为8000-0
     ret = ledc_set_fade_time_and_start(ledc_channel[0].speed_mode, ledc_channel[0].channel, ctl_duty, fade_time, ledc_channel[0].speed_mode);
-
+    //printf("ret = %c\r\n", ret);
     if (ret != ESP_OK)
     {
         Pwm_Init();
+        printf("ERROR\r\n");
     }
     else
     {
@@ -89,10 +90,11 @@ void Led_UP_Y(uint16_t duty, int fade_time) //上黄光控制，duty0-100
     esp_err_t ret;
     uint16_t ctl_duty = 8000 - (uint16_t)(80.00 * (float)duty); //将0-100变为8000-0
     ret = ledc_set_fade_time_and_start(ledc_channel[1].speed_mode, ledc_channel[1].channel, ctl_duty, fade_time, ledc_channel[1].speed_mode);
-
+    //printf("ret = %c\r\n", ret);
     if (ret != ESP_OK)
     {
         Pwm_Init();
+        printf("ERROR\r\n");
     }
     else
     {
@@ -107,10 +109,11 @@ void Led_DOWN_W(uint16_t duty, int fade_time) //下白光控制，duty0-100
     esp_err_t ret;
     uint16_t ctl_duty = 8000 - (uint16_t)(80.00 * (float)duty); //将0-100变为8000-0
     ret = ledc_set_fade_time_and_start(ledc_channel[2].speed_mode, ledc_channel[2].channel, ctl_duty, fade_time, ledc_channel[2].speed_mode);
-
+    //printf("ret = %c\r\n", ret);
     if (ret != ESP_OK)
     {
         Pwm_Init();
+        printf("ERROR\r\n");
     }
     else
     {
@@ -125,10 +128,11 @@ void Led_DOWN_Y(uint16_t duty, int fade_time) //下黄光控制，duty0-100
     esp_err_t ret;
     uint16_t ctl_duty = 8000 - (uint16_t)(80.00 * (float)duty);
     ret = ledc_set_fade_time_and_start(ledc_channel[3].speed_mode, ledc_channel[3].channel, ctl_duty, fade_time, ledc_channel[3].speed_mode);
-
+    //printf("ret = %c\r\n", ret);
     if (ret != ESP_OK)
     {
         Pwm_Init();
+        printf("ERROR\r\n");
     }
     else
     {
@@ -146,19 +150,19 @@ uint64_t Led_Color_CTL(uint16_t color_temp, int fade_time)
     {
         if (Up_Light_Status == 1)
         {
-            uint16_t duty1;
-            duty1 = 100 - Z;
-            printf("duty=%d\r\n", duty1);
+            uint16_t duty2;
+            duty2 = 100 - Z;
+            printf("duty2=%d\r\n", duty2);
             Led_UP_W(100, fade_time);
-            Led_UP_Y(duty1, fade_time);
+            Led_UP_Y(duty2, fade_time);
         }
         if (Down_Light_Status == 1)
         {
-            uint16_t duty1;
-            duty1 = 100 - Z;
-            printf("duty=%d\r\n", duty1);
+            uint16_t duty2;
+            duty2 = 100 - Z;
+            printf("duty2=%d\r\n", duty2);
             Led_DOWN_W(100, fade_time);
-            Led_DOWN_Y(duty1, fade_time);
+            Led_DOWN_Y(duty2, fade_time);
         }
     }
     else if (color_temp == 3100) //  白灯/黄灯 = 5/95 eg：Z = 60；白灯为60*0.05=3 黄灯为60*0.95=57
@@ -275,9 +279,9 @@ uint64_t Led_Color_CTL(uint16_t color_temp, int fade_time)
         {
             uint16_t duty1;
             uint16_t duty2;
-            u = 23 / 67;
+            u = 23 / 77;
             duty1 = 100 - Z * 0.23;
-            duty2 = 100 - Z * 0.67;
+            duty2 = 100 - Z * 0.77;
             printf("duty1=%d\r\n", duty1);
             printf("duty2=%d\r\n", duty2);
             Led_UP_W(duty1, fade_time);
@@ -287,9 +291,9 @@ uint64_t Led_Color_CTL(uint16_t color_temp, int fade_time)
         {
             uint16_t duty1;
             uint16_t duty2;
-            u = 23 / 67;
+            u = 23 / 77;
             duty1 = 100 - Z * 0.23;
-            duty2 = 100 - Z * 0.67;
+            duty2 = 100 - Z * 0.77;
             printf("duty1=%d\r\n", duty1);
             printf("duty2=%d\r\n", duty2);
             Led_DOWN_W(duty1, fade_time);
@@ -686,21 +690,21 @@ uint64_t Led_Color_CTL(uint16_t color_temp, int fade_time)
     {
         if (Up_Light_Status == 1)
         {
-            uint16_t duty2;
-            duty2 = 100 - Z;
+            uint16_t duty1;
+            duty1 = 100 - Z;
             //printf("duty1=%d\r\n", duty1);
-            printf("duty2=%d\r\n", duty2);
-            Led_UP_W(duty2, fade_time);
+            printf("duty1=%d\r\n", duty1);
+            Led_UP_W(duty1, fade_time);
             Led_UP_Y(100, fade_time);
         }
         if (Down_Light_Status == 1)
         {
 
-            uint16_t duty2;
-            duty2 = 100 - Z;
+            uint16_t duty1;
+            duty1 = 100 - Z;
             //printf("duty1=%d\r\n", duty1);
-            printf("duty2=%d\r\n", duty2);
-            Led_DOWN_W(duty2, fade_time);
+            printf("duty1=%d\r\n", duty1);
+            Led_DOWN_W(duty1, fade_time);
             Led_DOWN_Y(100, fade_time);
         }
     }
@@ -726,7 +730,7 @@ void Led_Time_Ctl(void)
 {
 
     int year, month, day, hour, min, sec;
-    Rtc_Read(&year, &month, &day, &hour, &min, &sec);
+    SD25Rtc_Read(&year, &month, &day, &hour, &min, &sec);
 
     if (temp_hour != hour)
     {
@@ -827,9 +831,25 @@ void Led_Time_Ctl(void)
             color_temp = 4500;
         }
 
-        else if ((hour == 11) && (min <= 5))
+        else if ((hour == 11) && (min < 5))
         {
-            vTaskDelay(60000 / portTICK_RATE_MS);
+            if (min == 1)
+            {
+                color_temp = 4600;
+            }
+            else if (min == 2)
+            {
+                color_temp = 4700;
+            }
+            else if (min == 3)
+            {
+                color_temp = 4800;
+            }
+            else if (min == 4)
+            {
+                color_temp = 4900;
+            }
+            /*vTaskDelay(60000 / portTICK_RATE_MS);
             color_temp = 4600;
             vTaskDelay(60000 / portTICK_RATE_MS);
             color_temp = 4700;
@@ -837,7 +857,7 @@ void Led_Time_Ctl(void)
             color_temp = 4800;
             vTaskDelay(60000 / portTICK_RATE_MS);
             color_temp = 4900;
-            vTaskDelay(60000 / portTICK_RATE_MS);
+            vTaskDelay(60000 / portTICK_RATE_MS);*/
         }
         else if (((hour >= 12) && (hour <= 13)) || ((hour == 11) && (min >= 5)))
         {

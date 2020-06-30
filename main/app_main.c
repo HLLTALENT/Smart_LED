@@ -329,10 +329,13 @@ void app_main(void)
     Ble_need_restart = 0;
 
     ESP_LOGI("MAIN", "[APP] IDF version: %s", esp_get_idf_version());
+    SD25RTC_IIC_Init();
+
     Wallkey_Init();
     E2prom_Init();
-    SD25RTC_IIC_Init();
+    //SD25RTC_IIC_Init();
     sd25rtc_init();
+
     OPT3001_Init();
     Pwm_Init();
     Human_Init();
@@ -432,8 +435,8 @@ void app_main(void)
         xTaskCreate(Human_Task, "Human_Task", 8192, NULL, 10, NULL);
         xTaskCreate(&opt3001_task, "opt3001_task", 4096, NULL, 10, NULL);
 
-        xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
-                            false, true, portMAX_DELAY); //等待网络连接、
+        //xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
+        //false, true, portMAX_DELAY); //等待网络连接、
         initialise_http();
         initialise_mqtt();
     }

@@ -53,6 +53,7 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
     case SYSTEM_EVENT_STA_DISCONNECTED:
 
         ESP_LOGI(TAG, "断网");
+
         Wifi_ErrCode = event->event_info.disconnected.reason;
         if (Wifi_ErrCode >= 1 && Wifi_ErrCode <= 24) //适配APP，
         {
