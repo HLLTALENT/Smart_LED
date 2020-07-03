@@ -35,6 +35,7 @@ uint8_t wifi_work_sta = turn_on;
 uint8_t start_AP = 0;
 uint8_t bl_flag = 0; //蓝牙配网模式
 uint8_t Wifi_ErrCode = 0;
+uint16_t Net_ErrCode = 0;
 
 static esp_err_t event_handler(void *ctx, system_event_t *event)
 {
@@ -140,7 +141,7 @@ void init_wifi(void) //
 {
     start_AP = 0;
     tcpip_adapter_init();
-    wifi_event_group = xEventGroupCreate();
+
     memset(&s_staconf.sta, 0, sizeof(s_staconf));
     ESP_ERROR_CHECK(esp_event_loop_init(event_handler, NULL));
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
@@ -169,78 +170,6 @@ void init_wifi(void) //
         // wifi_init_softap();
         // my_tcp_connect();
     }
-}
-
-/*
-* WIFI作为AP的初始化
-* @param[in]   void  		       :无
-* @retval      void                :无
-* @note        修改日志 
-*               Ver0.0.1:
-                    hx-zsj, 2018/08/06, 初始化版本\n 
-*/
-
-//TaskHandle_t my_tcp_connect_Handle = NULL;
-void wifi_init_softap(void)
-{
-    tcp_event_group = xEventGroupCreate();
-    start_AP = 1;
-    //Led_Status = LED_STA_AP;
-    ESP_ERROR_CHECK(esp_wifi_stop());
-    wifi_config_t wifi_config = {
-        .ap = {
-            .ssid = SOFT_AP_SSID, // SOFT_AP_SSID,
-            .password = SOFT_AP_PAS,
-            .ssid_len = 0,
-            .max_connection = SOFT_AP_MAX_CONNECT,
-            .authmode = WIFI_AUTH_WPA_WPA2_PSK}};
-    if (strlen(SOFT_AP_PAS) == 0)
-    {
-        wifi_config.ap.authmode = WIFI_AUTH_OPEN;
-    }
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
-    ESP_LOGI(TAG, "SoftAP set finish,SSID:%s password:%s \n",
-             wifi_config.ap.ssid, wifi_config.ap.password);
-
-    //my_tcp_connect_Handle = NULL;
-    //xTaskCreate(&my_tcp_connect_task, "my_tcp_connect_task", 4096, NULL, 5, &my_tcp_connect_Handle);
-}
-
-/*
-* WIFI作为AP+STA的初始化
-* @param[in]   void  		       :无
-* @retval      void                :无
-* @note        修改日志 
-*               Ver0.0.1:
-
-*/
-void wifi_init_apsta(void)
-{
-    wifi_event_group = xEventGroupCreate();
-    tcpip_adapter_init();
-    ESP_ERROR_CHECK(esp_event_loop_init(event_handler, NULL));
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-    wifi_config_t sta_wifi_config;
-    ESP_ERROR_CHECK(esp_wifi_get_config(ESP_IF_WIFI_STA, &sta_wifi_config));
-
-    wifi_config_t ap_wifi_config =
-        {
-            .ap = {
-                .ssid = "esp32_ap",
-                .password = "",
-                //     .authmode = WIFI_AUTH_WPA_WPA2_PSK,
-                .max_connection = 1,
-            },
-        };
-
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &sta_wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &ap_wifi_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
 }
 
 /*void stop_user_wifi(void)

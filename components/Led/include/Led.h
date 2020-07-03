@@ -23,6 +23,8 @@ uint8_t Led_Status;
 #define LED_STA_PROTECT 0x07 //除火灾外的保护状态
 #define LED_KEY_ID 0x08      //接收到手动控制指令时
 
+extern bool Cnof_net_flag;
+
 extern void Led_R_On(void);
 extern void Led_B_On(void);
 extern void Led_G_On(void);

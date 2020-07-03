@@ -5,6 +5,8 @@
 #include "freertos/task.h"
 #include "Bluetooth.h"
 
+//EventGroupHandle_t wifi_event_group;
+
 void smartconfig_example_task(void *parm);
 // void initialise_wifi(char *wifi_ssid, char *wifi_password);
 void initialise_wifi(void);
@@ -21,6 +23,7 @@ extern uint8_t start_AP;
 extern uint8_t bl_flag; //蓝牙配网模式
 
 extern uint8_t Wifi_ErrCode; //
+extern uint16_t Net_ErrCode;
 
 static const int CONNECTED_BIT = BIT0;
 static const int AP_STACONNECTED_BIT = BIT0;
@@ -35,6 +38,9 @@ extern EventGroupHandle_t tcp_event_group;
 #define connect_N 2
 #define turn_on 1
 #define turn_off 2
+
+#define ACTIVED_BIT (1 << 1)   //激活
+#define BLE_RESP_BIT (1 << 17) //蓝牙超时回复标志
 
 //server
 //AP热点模式的配置信息

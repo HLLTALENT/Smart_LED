@@ -730,7 +730,7 @@ void Led_Time_Ctl(void)
 {
 
     int year, month, day, hour, min, sec;
-    SD25Rtc_Read(&year, &month, &day, &hour, &min, &sec);
+    Rtc_Read(&year, &month, &day, &hour, &min, &sec);
 
     if (temp_hour != hour)
     {
@@ -970,19 +970,6 @@ void Led_Time_Ctl(void)
         //printf("color_temp2=%d\r\n", color_temp);
     }
 }
-void Led_Time_Ctl_Task(void *arg)
-{
-    while (1)
-    {
-        if ((Up_Light_Status == 1) || (Down_Light_Status == 1)) //|| (start_read_blue_ret == BLU_COMMAND_SWITCH) || BLU_COMMAND_CALCULATION)
-        {
-            Led_Time_Ctl();
-            //printf("灯自动运行中\r\n");
-        }
-        vTaskDelay(100 / portTICK_RATE_MS);
-    }
-    //vTaskDelete(NULL);
-}
 
 void Pwm_Init(void)
 {
@@ -1026,6 +1013,4 @@ void Pwm_Init(void)
     //temp_hour = -1;
 
     printf("led start on\r\n");
-
-    xTaskCreate(Led_Time_Ctl_Task, "Led_Time_Ctl_Task", 2048, NULL, 9, NULL);
 }

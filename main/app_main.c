@@ -76,7 +76,15 @@ void timer_periodic_cb(void *arg) //200ms中断一次
         timer_count1 = 0;
         if ((temp_hour == -1) || (human_status == HAVEHUMAN))
         {
-            Localcalculation(lightX, color_temp, 1000);
+            if (wifi_connect_sta == connect_N)
+            {
+                SD25Rtc_Read(&year, &month, &day, &hour, &min, &sec);
+                Localcalculation(lightX, color_temp, 1000);
+            }
+            else
+            {
+                Localcalculation(lightX, color_temp, 1000);
+            }
         }
         else if (human_status == NOHUMAN)
         {
@@ -276,6 +284,19 @@ void timer_periodic_cb(void *arg) //200ms中断一次
         printf("human_status=%d\n", human_status);
     }
 }
+void Led_Time_Ctl_Task(void *arg)
+{
+    while (1)
+    {
+        if ((Up_Light_Status == 1) || (Down_Light_Status == 1)) //|| (start_read_blue_ret == BLU_COMMAND_SWITCH) || BLU_COMMAND_CALCULATION)
+        {
+            Led_Time_Ctl();
+            //printf("灯自动运行中\r\n");
+        }
+        vTaskDelay(100 / portTICK_RATE_MS);
+    }
+    //vTaskDelete(NULL);
+}
 
 /*static void Wallkey_Read_Task(void *arg)
 {
@@ -322,6 +343,7 @@ static void Uart0_Task(void *arg)
 
 void app_main(void)
 {
+    wifi_event_group = xEventGroupCreate();
 
     nvs_flash_init();
 
@@ -335,13 +357,13 @@ void app_main(void)
     E2prom_Init();
     //SD25RTC_IIC_Init();
     sd25rtc_init();
-
-    OPT3001_Init();
     Pwm_Init();
+    OPT3001_Init();
     Human_Init();
     Led_Init();
 
     Uart0_Init();
+    //ble_app_start();
 
     xTaskCreate(Uart0_Task, "Uart0_Task", 4096, NULL, 10, NULL);
 
@@ -378,7 +400,10 @@ void app_main(void)
         }
     }
 
-    ble_app_start();
+    ble_app_init();
+    //ble_app_start();
+    //ulTaskNotifyTake(pdTRUE, -1);
+    // ble_app_start();
     init_wifi();
     start_read_blue_ret = read_bluetooth();
     if (start_read_blue_ret == 0) //未获取到蓝牙配置信息
@@ -399,30 +424,6 @@ void app_main(void)
     }
     if (start_read_blue_ret == BLU_RESULT_SUCCESS)
     {
-        /*while (http_activate() < 0) //激活
-        {
-            printf("activate fail\n");
-            vTaskDelay(2000 / portTICK_PERIOD_MS);
-        }*/
-        /*E2prom_Read(0x00, (uint8_t *)ApiKey, 32);
-        printf("readApiKey=%s\n", ApiKey);
-        E2prom_Read(0x20, (uint8_t *)ChannelId, 16);
-        printf("readChannelId=%s\n", ChannelId);
-        if ((strlen(SerialNum) == 0) || (strlen(ChannelId) == 0)) //未获取到API-KEY，和channelid进行激活流程
-        {
-            printf("no ApiKey or channelId!\n");
-
-            while (http_activate() < 0) //激活失败
-            {
-                vTaskDelay(10000 / portTICK_RATE_MS);
-            }
-
-            //激活成功
-            E2prom_Read(0x00, (uint8_t *)ApiKey, 32);
-            printf("ApiKey=%s\n", ApiKey);
-            E2prom_Read(0x20, (uint8_t *)ChannelId, 16);
-            printf("ChannelId=%s\n", ChannelId);
-        }*/
 
         /*******************************timer 1s init**********************************************/
         esp_err_t err = esp_timer_create(&timer_periodic_arg, &timer_periodic_handle);
@@ -434,10 +435,26 @@ void app_main(void)
 
         xTaskCreate(Human_Task, "Human_Task", 8192, NULL, 10, NULL);
         xTaskCreate(&opt3001_task, "opt3001_task", 4096, NULL, 10, NULL);
+        xTaskCreate(Led_Time_Ctl_Task, "Led_Time_Ctl_Task", 2048, NULL, 9, NULL);
 
-        //xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
-        //false, true, portMAX_DELAY); //等待网络连接、
+        xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
+                            false, true, portMAX_DELAY); //等待网络连接、
         initialise_http();
         initialise_mqtt();
+        //}
+    }
+    if (start_read_blue_ret == BLU_COMMAND_CALCULATION)
+    {
+        /*******************************timer 1s init**********************************************/
+        esp_err_t err = esp_timer_create(&timer_periodic_arg, &timer_periodic_handle);
+        err = esp_timer_start_periodic(timer_periodic_handle, 200000); //创建定时器，单位us，定时200ms
+        if (err != ESP_OK)
+        {
+            printf("timer periodic create err code:%d\n", err);
+        }
+
+        xTaskCreate(Human_Task, "Human_Task", 8192, NULL, 10, NULL);
+        xTaskCreate(&opt3001_task, "opt3001_task", 4096, NULL, 10, NULL);
+        xTaskCreate(Led_Time_Ctl_Task, "Led_Time_Ctl_Task", 2048, NULL, 9, NULL);
     }
 }

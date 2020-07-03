@@ -23,6 +23,7 @@
 #include "Localcalculation.h"
 
 extern uint8_t human_status;
+int32_t ret1;
 
 //metadata 参数
 unsigned long fn_dp = 60; //数据发送频率 默认60s
@@ -127,7 +128,7 @@ int read_bluetooth(void)
     {
         return 0;
     }
-    int32_t ret1 = parse_objects_bluetooth((char *)bluetooth_sta);   //uint8_t ret = parse_objects_bluetooth((char *)bluetooth_sta);
+    ret1 = parse_objects_bluetooth((char *)bluetooth_sta);           //uint8_t ret = parse_objects_bluetooth((char *)bluetooth_sta);
     if ((ret1 == BLU_PWD_REFUSE) || (ret1 == BLU_JSON_FORMAT_ERROR)) //if (ret == BLU_JSON_FORMAT_ERROR)
     {
         return 0;
@@ -176,15 +177,15 @@ int32_t parse_objects_bluetooth(char *blu_json_data)
     cJSON_Delete(cjson_blu_data_parse);
 
     xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, 10000 / portTICK_RATE_MS); //10S后仍然未连接上WIFI
-    if ((wifi_connect_sta == connect_Y) || (a == 0))
+    if (wifi_connect_sta == connect_Y)
     {
         need_reactivate = 1;
         return BLU_RESULT_SUCCESS; //return http_activate();
     }
-    /*else if (a == 2)
+    else if ((wifi_connect_sta == connect_N) || (a == 0))
     {
-        return esp_wifi_stop();
-    }*/
+        return BLU_COMMAND_CALCULATION;
+    }
     else
     {
         return BLU_WIFI_ERR;
@@ -257,12 +258,12 @@ esp_err_t parse_objects_http_active(char *http_json_data)
 
             //写入API-KEY
             sprintf(ApiKey, "%s%c", json_data_parse_channel_channel_write_key->valuestring, '\0');
-            //printf("api key=%s\r\n", ApiKey);
+            printf("api key=%s\r\n", ApiKey);
             E2prom_Write(0x00, (uint8_t *)ApiKey, 32);
 
             //写入channelid
             sprintf(ChannelId, "%s%c", json_data_parse_channel_channel_id_value->valuestring, '\0');
-            //printf("channel_id=%s\r\n", ChannelId);
+            printf("channel_id=%s\r\n", ChannelId);
             E2prom_Write(0x20, (uint8_t *)ChannelId, strlen(ChannelId));
         }
     }

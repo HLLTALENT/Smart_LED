@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include "esp_err.h"
 
+extern int32_t ret1;
+
 esp_err_t parse_objects_http_active(char *http_json_data);
 int32_t parse_objects_bluetooth(char *blu_json_data); //esp_err_t parse_objects_bluetooth(char *blu_json_data);
 esp_err_t parse_objects_mqtt(char *json_data);

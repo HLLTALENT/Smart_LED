@@ -8,6 +8,7 @@
 #define GPIO_LED_G 22
 #define GPIO_LED_R 23
 #define GPIO_LED_B 21
+bool Cnof_net_flag = false;
 
 void Led_R_On(void);
 void Led_G_On(void);

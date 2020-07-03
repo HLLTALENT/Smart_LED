@@ -47,7 +47,6 @@ uint8_t RtcWriteOneByte(uint8_t addr, uint8_t dat) //rtc写一个字节
     i2c_cmd_link_delete(cmd);
     if (ret == ESP_OK)
     {
-        printf("2\r\n");
         return true;
     }
     else
@@ -142,7 +141,7 @@ uint8_t WriteOff(void)
         return false;
 
     RtcWriteOneByte(0x10, 0);
-    printf("3\r\n");
+    //printf("3\r\n");
     return true;
 }
 
@@ -183,7 +182,7 @@ uint8_t RtcReadDate(uint8_t *time_dat)
 
     if (ret == ESP_OK)
     {
-        printf("rtc read ok\n");
+        //printf("rtc read ok\n");
         return true;
     }
     else
@@ -274,7 +273,7 @@ void sd25rtc_init(void)
     // S_Time SETRTC = {0x00, 0x47, 0x14, 0x01, 0x14, 0x10, 0x19};
     //       00秒 17分 10时 周3 10日   7月 19年
     //printf("rtc write=%d\n", RtcWriteDate(&SETRTC)); //设置时间
-    /*RtcReadDate(read_dat); //读取时间
+    RtcReadDate(read_dat); //读取时间
 
     DSRTC.second = read_dat[0];
     DSRTC.minute = read_dat[1];
@@ -283,7 +282,7 @@ void sd25rtc_init(void)
     DSRTC.week = read_dat[3];
     DSRTC.day = read_dat[4];
     DSRTC.month = read_dat[5];
-    DSRTC.year = read_dat[6];*/
+    DSRTC.year = read_dat[6];
 
     /*printf("time_dat0=%x\n", read_dat[0]);
     printf("time_dat1=%x\n", read_dat[1]);
@@ -293,11 +292,11 @@ void sd25rtc_init(void)
     printf("time_dat5=%x\n", read_dat[5]);
     printf("time_dat6=%x\n", read_dat[6]);*/
 
-    //RtcDisplay(); //打印时间
+    RtcDisplay(); //打印时间
 
     //开机将SD25时间设置为系统时间
 
-    /*temp = DSRTC.year >> 4;
+    temp = DSRTC.year >> 4;
     temp = temp & 0x0f;
     DSRTC.year = DSRTC.year & 0x0f;
     year = 2000 + temp * 10 + DSRTC.year;
@@ -333,7 +332,7 @@ void sd25rtc_init(void)
     sec = temp * 10 + DSRTC.second;
     printf("rtc sec=%d\n", sec);
 
-    Rtc_Set(year, month, day, hour, min, sec);*/
+    Rtc_Set(year, month, day, hour, min, sec);
 }
 void SD25Rtc_Read(int *year, int *month, int *day, int *hour, int *min, int *sec)
 {

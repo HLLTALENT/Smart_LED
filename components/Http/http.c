@@ -126,7 +126,7 @@ int32_t wifi_http_send(char *send_buff, uint16_t send_size, char *recv_buff, uin
         ESP_LOGE(TAG, "... Failed to allocate socket. err:%d", s);
         close(s);
         freeaddrinfo(res);
-        vTaskDelay(4000 / portTICK_PERIOD_MS);
+        //vTaskDelay(4000 / portTICK_PERIOD_MS);
         return -1;
     }
     ESP_LOGI(TAG, "... allocated socket");
@@ -136,7 +136,7 @@ int32_t wifi_http_send(char *send_buff, uint16_t send_size, char *recv_buff, uin
         ESP_LOGE(TAG, "... socket connect failed errno=%d", errno);
         close(s);
         freeaddrinfo(res);
-        vTaskDelay(4000 / portTICK_PERIOD_MS);
+        //vTaskDelay(4000 / portTICK_PERIOD_MS);
         return -1;
     }
 
@@ -148,7 +148,7 @@ int32_t wifi_http_send(char *send_buff, uint16_t send_size, char *recv_buff, uin
     {
         ESP_LOGE(TAG, "... socket send failed");
         close(s);
-        vTaskDelay(4000 / portTICK_PERIOD_MS);
+        //vTaskDelay(4000 / portTICK_PERIOD_MS);
         return -1;
     }
     ESP_LOGI(TAG, "... socket send success");
@@ -160,7 +160,7 @@ int32_t wifi_http_send(char *send_buff, uint16_t send_size, char *recv_buff, uin
     {
         ESP_LOGE(TAG, "... failed to set socket receiving timeout");
         close(s);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        //vTaskDelay(1000 / portTICK_PERIOD_MS);
         return -1;
     }
     ESP_LOGI(TAG, "... set socket receiving timeout success");
@@ -250,7 +250,8 @@ int32_t http_activate(void)
 {
     char build_http[256];
     char recv_buf[1024];
-
+    //xEventGroupSetBits(Net_sta_group, ACTIVE_S_BIT);
+    xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT, false, true, -1); //等网络连接
     sprintf(build_http, "%s%s%s%s%s%s%s", http.GET, http.WEB_URL1, ProductId, http.WEB_URL2, SerialNum, http.WEB_URL3, http.ENTER);
     //http.HTTP_VERSION10, http.HOST, http.USER_AHENT, http.ENTER);
 
@@ -258,7 +259,7 @@ int32_t http_activate(void)
 
     if (http_send_buff(build_http, 256, recv_buf, 1024) < 0)
     {
-        return 101;
+        return 301;
     }
     else
     {
@@ -268,7 +269,7 @@ int32_t http_activate(void)
         }
         else
         {
-            return 102;
+            return 302;
         }
     }
 
@@ -339,12 +340,12 @@ void initialise_http(void)
 {
     xMutex_Http_Send = xSemaphoreCreateMutex(); //创建HTTP发送互斥信号
     Binary_Http_Send = xSemaphoreCreateBinary();
-
+    xEventGroupClearBits(wifi_event_group, ACTIVED_BIT);
     while (http_activate() < 0) //激活
     {
         ESP_LOGE(TAG, "activate fail\n");
         vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
-
+    xEventGroupSetBits(wifi_event_group, ACTIVED_BIT);
     xTaskCreate(&http_get_task, "http_get_task", 8192, NULL, 6, &httpHandle);
 }
