@@ -70,7 +70,7 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
         key_read = Wallkey_Read(ob_blu_json.WallKeyId, ob_blu_json.Switch);
         if ((key_read == KEY_SIN) && (Up_Light_Status == 1) && (Down_Light_Status == 1) && (human_status == HAVEHUMAN))
         {
-            auto_ctl_count1 = 0;
+            //auto_ctl_count1 = 0;
             Wallkey_status = 1;
             Led_Status = LED_STA_NOSER;
             Led_UP_W(100, 100);
@@ -84,7 +84,7 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
         }
         else if ((key_read == KEY_SIN) && (Up_Light_Status == 0) && (Down_Light_Status == 0) && (human_status == HAVEHUMAN))
         {
-            auto_ctl_count1 = 0;
+            //auto_ctl_count1 = 0;
             Wallkey_status = 1;
             Led_Status = LED_STA_AUTO; //绿灯亮
             Down_Light_Status = 0;     //Down_Light_Status = 1;
@@ -94,7 +94,7 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
         }
         else if ((key_read == KEY_SIN) && (Down_Light_Status == 0) && (Up_Light_Status == 1) && (human_status == HAVEHUMAN))
         {
-            auto_ctl_count1 = 0;
+            //auto_ctl_count1 = 0;
             Wallkey_status = 1;
             Led_Status = LED_STA_AUTO; //绿灯亮
             Led_UP_W(100, 100);
@@ -109,7 +109,7 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
         }
         else if ((key_read == KEY_SIN) && (Down_Light_Status == 1) && (Up_Light_Status == 0) && (human_status == HAVEHUMAN))
         {
-            auto_ctl_count1 = 0;
+            //auto_ctl_count1 = 0;
             Wallkey_status = 1;
             Led_Status = LED_STA_AUTO; //绿灯亮
 

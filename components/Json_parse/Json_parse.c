@@ -513,7 +513,7 @@ esp_err_t parse_objects_mqtt(char *mqtt_json_data)
                     else
                     {
                         //human_status = 0;
-                        auto_ctl_count = 0;
+                        //auto_ctl_count = 0;
                         strcpy(mqtt_json_s.mqtt_control_char, "command");
                         work_status = WORK_HAND;
                         strcpy(mqtt_json_s.mqtt_mode, "0");
