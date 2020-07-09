@@ -38,7 +38,7 @@ int8_t Wallkey_Read(uint8_t *Key_Id, int8_t Switch)
                 if (data_u1[9] == KEY_SIN)
                 {
                     ESP_LOGI(TAG, "KEY_SIN");
-                    vTaskDelay(2000 / portTICK_RATE_MS);
+                    vTaskDelay(1000 / portTICK_RATE_MS);
                 }
 
                 else if (data_u1[9] == KEY_SIN_RELEASE)
