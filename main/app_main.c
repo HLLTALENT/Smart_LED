@@ -254,7 +254,7 @@ void timer_periodic_cb(void *arg) //200ms中断一次
             }
         }
 
-        if (nohuman_timer_count >= 600) //60s 1min
+        if (nohuman_timer_count >= 900) //60s 1min
         {
             human_status = NOHUMAN;
             nohuman_timer_count = 0;
