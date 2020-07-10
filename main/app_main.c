@@ -88,6 +88,7 @@ void timer_periodic_cb(void *arg) //200ms中断一次
         }
         else if (human_status == NOHUMAN)
         {
+            Wallkey_status = 0;
             Led_DOWN_W(100, 1000);
             Led_DOWN_Y(100, 1000);
             Led_UP_W(100, 1000);
@@ -116,7 +117,7 @@ void timer_periodic_cb(void *arg) //200ms中断一次
                 printf("hand to auto by last time2\n");
             }
         }*/
-        /*        auto_ctl_count1++; //无线开关指令计时
+        /*auto_ctl_count1++; //无线开关指令计时
         //printf("auto_ctl_count=%d\n", auto_ctl_count);
         if (auto_ctl_count1 >= MAX_WALLKEY_TIME) //超时没收到平台自动控制指令,转本地计算 10min
         {
@@ -189,12 +190,12 @@ void timer_periodic_cb(void *arg) //200ms中断一次
                 Wallkey_status = 0;
                 //printf("human_status=%d\n", human_status);
             }
-        }
+        }*/
     }
-*/
-        /////////////////////////////////
 
-        /*if (timer_count2 >= 25) //5s
+    /////////////////////////////////
+
+    /*if (timer_count2 >= 25) //5s
     {
         timer_count2 = 0;
         printf("[APP] Free memory: %d bytes\n", esp_get_free_heap_size());
@@ -203,74 +204,74 @@ void timer_periodic_cb(void *arg) //200ms中断一次
         printf("Time:%d-%d-%d %d:%d:%d\r\n", year, month, day, hour, min, sec);
     }*/
 
-        if (human_status == HAVEHUMAN) //有人时，1s内右2个1则转为有人
+    if (human_status == HAVEHUMAN) //有人时，1s内右2个1则转为有人
+    {
+        if (timer_count >= 10) //2s
         {
-            if (timer_count >= 10) //2s
+            timer_count = 0;
+            if (havehuman_count >= 4)
             {
-                timer_count = 0;
-                if (havehuman_count >= 4)
-                {
-                    human_status = HAVEHUMAN;
-                    printf("human_status1=%d\n", human_status);
-                    //mqtt_json_s.mqtt_human = 1;
-                    //printf("human_status=%d\n", human_status);
-                    //strcpy(mqtt_json_s.mqtt_human_char, "1");
-                    //temp_hour = -1;
-                    havehuman_count = 0;
-                    nohuman_timer_count = 0;
-                }
-                else
-                {
-                    havehuman_count = 0;
-                }
+                human_status = HAVEHUMAN;
+                printf("human_status1=%d\n", human_status);
+                //mqtt_json_s.mqtt_human = 1;
+                //printf("human_status=%d\n", human_status);
+                //strcpy(mqtt_json_s.mqtt_human_char, "1");
+                //temp_hour = -1;
+                havehuman_count = 0;
+                nohuman_timer_count = 0;
             }
-        }
-
-        if (human_status == NOHUMAN) //无人时，2s内右6个1则转为有人
-        {
-
-            if (timer_count >= 10) //2s
+            else
             {
-                timer_count = 0;
-                if (havehuman_count >= 6)
-                {
-                    if (human_status == NOHUMAN) //如当前是无人，立即上传有人
-                    {
-                        //strcpy(mqtt_json_s.mqtt_human_char, "1");
-                        need_send = 1;
-                    }
-                    human_status = HAVEHUMAN;
-                    printf("human_status2=%d\n", human_status);
-                    //strcpy(mqtt_json_s.mqtt_human_char, "1");
-                    //temp_hour = -1;
-                    //printf("human_status2=%d\n", human_status);
-                    havehuman_count = 0;
-                    nohuman_timer_count = 0;
-                }
-                else
-                {
-                    havehuman_count = 0;
-                }
+                havehuman_count = 0;
             }
-        }
-
-        if (nohuman_timer_count >= 900) //60s 1min
-        {
-            human_status = NOHUMAN;
-            nohuman_timer_count = 0;
-            temp_hour = 0;
-            //printf("human_status_no=%d\n", human_status);
-            //Led_DOWN_W(100, 1000);
-            //Led_DOWN_Y(100, 1000);
-            //Led_UP_W(100, 1000);
-            //Led_UP_Y(100, 1000);
-            //strcpy(mqtt_json_s.mqtt_human_char, "0");
-            //strcpy(mqtt_json_s.mqtt_light_char, "0");
-            //mqtt_json_s.mqtt_human = 0;
-            printf("human_status=%d\n", human_status);
         }
     }
+
+    if (human_status == NOHUMAN) //无人时，2s内右6个1则转为有人
+    {
+
+        if (timer_count >= 10) //2s
+        {
+            timer_count = 0;
+            if (havehuman_count >= 6)
+            {
+                if (human_status == NOHUMAN) //如当前是无人，立即上传有人
+                {
+                    //strcpy(mqtt_json_s.mqtt_human_char, "1");
+                    need_send = 1;
+                }
+                human_status = HAVEHUMAN;
+                printf("human_status2=%d\n", human_status);
+                //strcpy(mqtt_json_s.mqtt_human_char, "1");
+                //temp_hour = -1;
+                //printf("human_status2=%d\n", human_status);
+                havehuman_count = 0;
+                nohuman_timer_count = 0;
+            }
+            else
+            {
+                havehuman_count = 0;
+            }
+        }
+    }
+
+    if (nohuman_timer_count >= 900) //60s 1min
+    {
+        human_status = NOHUMAN;
+        nohuman_timer_count = 0;
+        temp_hour = 0;
+        //printf("human_status_no=%d\n", human_status);
+        //Led_DOWN_W(100, 1000);
+        //Led_DOWN_Y(100, 1000);
+        //Led_UP_W(100, 1000);
+        //Led_UP_Y(100, 1000);
+        //strcpy(mqtt_json_s.mqtt_human_char, "0");
+        //strcpy(mqtt_json_s.mqtt_light_char, "0");
+        //mqtt_json_s.mqtt_human = 0;
+        printf("human_status=%d\n", human_status);
+    }
 }
+
 void Led_Time_Ctl_Task(void *arg)
 {
     while (1)
@@ -284,15 +285,6 @@ void Led_Time_Ctl_Task(void *arg)
     }
     //vTaskDelete(NULL);
 }
-
-/*static void Wallkey_Read_Task(void *arg)
-{
-    while (1)
-    {
-        Wallkey_App(ob_blu_json.WallKeyId, ob_blu_json.Switch);
-        vTaskDelay(10 / portTICK_RATE_MS);
-    }
-}*/
 
 static void opt3001_task(void *arg)
 {

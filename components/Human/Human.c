@@ -54,7 +54,7 @@ void Humanapp(void)
     }
     else if (Wallkey_status == 1)
     {
-
+        //human_status = HAVEHUMAN;
         //vTaskDelay(60000 / portTICK_RATE_MS);
         //human_status = 1;
     }
