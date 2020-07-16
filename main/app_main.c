@@ -273,23 +273,21 @@ void timer_periodic_cb(void *arg) //200ms中断一次
     }
 }
 
-void Led_Time_Ctl_Task(void *arg)
+/*void Led_Time_Ctl_Task(void *arg)
 {
     while (1)
     {
         if ((Up_Light_Status == 1) || (Down_Light_Status == 1)) //|| (start_read_blue_ret == BLU_COMMAND_SWITCH) || BLU_COMMAND_CALCULATION)
         {
-            if (Wallkey_status != 1)
-            {
-                Led_Time_Ctl();
-            }
+
+            Led_Time_Ctl();
 
             //printf("灯自动运行中\r\n");
         }
         vTaskDelay(100 / portTICK_RATE_MS);
     }
     //vTaskDelete(NULL);
-}
+}*/
 
 static void opt3001_task(void *arg)
 {
@@ -419,7 +417,6 @@ void app_main(void)
 
         xTaskCreate(Human_Task, "Human_Task", 8192, NULL, 10, NULL);
         xTaskCreate(&opt3001_task, "opt3001_task", 4096, NULL, 10, NULL);
-        xTaskCreate(Led_Time_Ctl_Task, "Led_Time_Ctl_Task", 2048, NULL, 9, NULL);
 
         xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
                             false, true, portMAX_DELAY); //等待网络连接、
@@ -439,6 +436,5 @@ void app_main(void)
 
         xTaskCreate(Human_Task, "Human_Task", 8192, NULL, 10, NULL);
         xTaskCreate(&opt3001_task, "opt3001_task", 4096, NULL, 10, NULL);
-        xTaskCreate(Led_Time_Ctl_Task, "Led_Time_Ctl_Task", 2048, NULL, 9, NULL);
     }
 }
