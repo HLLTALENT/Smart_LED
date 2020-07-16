@@ -279,7 +279,11 @@ void Led_Time_Ctl_Task(void *arg)
     {
         if ((Up_Light_Status == 1) || (Down_Light_Status == 1)) //|| (start_read_blue_ret == BLU_COMMAND_SWITCH) || BLU_COMMAND_CALCULATION)
         {
-            Led_Time_Ctl();
+            if (Wallkey_status != 1)
+            {
+                Led_Time_Ctl();
+            }
+
             //printf("灯自动运行中\r\n");
         }
         vTaskDelay(100 / portTICK_RATE_MS);

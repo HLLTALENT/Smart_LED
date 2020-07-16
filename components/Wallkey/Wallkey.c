@@ -38,12 +38,13 @@ int8_t Wallkey_Read(uint8_t *Key_Id, int8_t Switch)
                 if (data_u1[9] == KEY_SIN)
                 {
                     ESP_LOGI(TAG, "KEY_SIN");
-                    //vTaskDelay(200 / portTICK_RATE_MS);
+                    //vTaskDelay(10 / portTICK_RATE_MS);
                 }
 
                 else if (data_u1[9] == KEY_SIN_RELEASE)
                 {
                     ESP_LOGI(TAG, "KEY_RELEASE");
+                    //vTaskDelay(10 / portTICK_RATE_MS);
                 }
 
                 return data_u1[9];
@@ -62,7 +63,7 @@ int8_t Wallkey_Read(uint8_t *Key_Id, int8_t Switch)
 static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int8_t Switch)
 {
 
-    int8_t key_read = 0;
+    int8_t key_read;
 
     while (1)
     {
@@ -81,6 +82,9 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
             printf("全关\r\n");
             Down_Light_Status = 0;
             Up_Light_Status = 0;
+            vTaskDelay(100 / portTICK_RATE_MS);
+            //vTaskDelay(50 / portTICK_RATE_MS);
+            //printf("Up_Light_Status= %d\r\n", Up_Light_Status);
         }
         else if ((key_read == KEY_SIN) && (Up_Light_Status == 0) && (Down_Light_Status == 0) && (human_status == HAVEHUMAN))
         {
@@ -90,7 +94,9 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
             Down_Light_Status = 0;     //Down_Light_Status = 1;
             Up_Light_Status = 1;       //Up_Light_Status = 0;
             temp_hour = -1;
+            vTaskDelay(100 / portTICK_RATE_MS);
             printf("上亮\r\n");
+            //printf("Up_Light_Status= %d\r\n", Up_Light_Status);
         }
         else if ((key_read == KEY_SIN) && (Down_Light_Status == 0) && (Up_Light_Status == 1) && (human_status == HAVEHUMAN))
         {
@@ -105,6 +111,7 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
             Up_Light_Status = 0;
 
             temp_hour = -1;
+            vTaskDelay(100 / portTICK_RATE_MS);
             printf("下亮\r\n");
         }
         else if ((key_read == KEY_SIN) && (Down_Light_Status == 1) && (Up_Light_Status == 0) && (human_status == HAVEHUMAN))
@@ -118,8 +125,9 @@ static void Wallkey_Read_Task(void *arg) //void Wallkey_App(uint8_t *Key_Id, int
 
             Down_Light_Status = 1;
             Up_Light_Status = 1;
+            vTaskDelay(100 / portTICK_RATE_MS);
         }
-        //vTaskDelay(10 / portTICK_RATE_MS);
+        vTaskDelay(10 / portTICK_RATE_MS);
     }
     vTaskDelete(NULL);
 }
