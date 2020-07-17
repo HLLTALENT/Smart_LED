@@ -79,11 +79,11 @@ void timer_periodic_cb(void *arg) //200ms中断一次
             if (wifi_connect_sta == connect_N)
             {
                 SD25Rtc_Read(&year, &month, &day, &hour, &min, &sec);
-                Localcalculation(lightX, color_temp, 1000);
+                Localcalculation(lightX, color_temp, 500);
             }
             else
             {
-                Localcalculation(lightX, color_temp, 1000);
+                Localcalculation(lightX, color_temp, 500);
             }
         }
         else if (human_status == NOHUMAN)

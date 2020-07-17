@@ -942,7 +942,7 @@ void Led_Time_Ctl(void)
         {
             temp_hour = hour;
             temp_min = min;
-            Led_Color_CTL(color_temp, ON_TIME);
+            Led_Color_CTL(color_temp, 500);
             Led_Status = LED_STA_AUTO;
             printf("灯自动运行1\r\n");
             //Led_Color_CTL(color_temp, ON_TIME);
