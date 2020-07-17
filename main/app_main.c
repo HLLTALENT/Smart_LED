@@ -76,14 +76,29 @@ void timer_periodic_cb(void *arg) //200ms中断一次
         timer_count1 = 0;
         if ((temp_hour == -1) || (human_status == HAVEHUMAN))
         {
-            if (wifi_connect_sta == connect_N)
+            if (Wallkey_status == 1)
             {
-                SD25Rtc_Read(&year, &month, &day, &hour, &min, &sec);
-                Localcalculation(lightX, color_temp, 350);
+                if (wifi_connect_sta == connect_N)
+                {
+                    SD25Rtc_Read(&year, &month, &day, &hour, &min, &sec);
+                    Localcalculation(lightX, color_temp, 350);
+                }
+                else
+                {
+                    Localcalculation(lightX, color_temp, 350);
+                }
             }
             else
             {
-                Localcalculation(lightX, color_temp, 350);
+                if (wifi_connect_sta == connect_N)
+                {
+                    SD25Rtc_Read(&year, &month, &day, &hour, &min, &sec);
+                    Localcalculation(lightX, color_temp, 1000);
+                }
+                else
+                {
+                    Localcalculation(lightX, color_temp, 1000);
+                }
             }
         }
         else if (human_status == NOHUMAN)
