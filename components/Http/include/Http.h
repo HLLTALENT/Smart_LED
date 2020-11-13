@@ -45,6 +45,7 @@ void initialise_http(void);
 
 void http_send_mes(void);
 int32_t http_activate(void);
+void Start_Active(void);
 
 extern uint8_t post_status;
 uint8_t human_status;

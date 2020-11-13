@@ -402,6 +402,8 @@ void app_main(void)
     //ulTaskNotifyTake(pdTRUE, -1);
     // ble_app_start();
     init_wifi();
+    //Start_Active();
+    //initialise_http();
     start_read_blue_ret = read_bluetooth();
     if (start_read_blue_ret == 0) //未获取到蓝牙配置信息
     {
@@ -421,6 +423,26 @@ void app_main(void)
     }
     if (start_read_blue_ret == BLU_RESULT_SUCCESS)
     {
+        /*step3 判断是否有API-KEY和channel-id****/
+        E2prom_Read(0x00, (uint8_t *)ApiKey, 32);
+        printf("readApiKey=%s\n", ApiKey);
+        E2prom_Read(0x20, (uint8_t *)ChannelId, 16);
+        printf("readChannelId=%s\n", ChannelId);
+        if ((strlen(SerialNum) == 0) || (strlen(ChannelId) == 0)) //未获取到API-KEY，和channelid进行激活流程
+        {
+            printf("no ApiKey or channelId!\n");
+
+            while (http_activate() == 0) //激活失败
+            {
+                vTaskDelay(10000 / portTICK_RATE_MS);
+            }
+
+            //激活成功
+            E2prom_Read(0x00, (uint8_t *)ApiKey, 32);
+            printf("ApiKey=%s\n", ApiKey);
+            E2prom_Read(0x20, (uint8_t *)ChannelId, 16);
+            printf("ChannelId=%s\n", ChannelId);
+        }
 
         /*******************************timer 1s init**********************************************/
         esp_err_t err = esp_timer_create(&timer_periodic_arg, &timer_periodic_handle);
@@ -435,9 +457,9 @@ void app_main(void)
 
         xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT,
                             false, true, portMAX_DELAY); //等待网络连接、
+
         initialise_http();
         initialise_mqtt();
-        //}
     }
     if (start_read_blue_ret == BLU_COMMAND_CALCULATION)
     {

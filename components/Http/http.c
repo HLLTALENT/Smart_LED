@@ -84,12 +84,10 @@ struct HTTP_STA
 
 TaskHandle_t httpHandle = NULL;
 /*esp_timer_handle_t http_suspend_p = 0;
-
 void http_suspends(void *arg)
 {
     xTaskResumeFromISR(httpHandle);
 }
-
 esp_timer_create_args_t http_suspend = {
     .callback = &http_suspends,
     .arg = NULL,
@@ -340,12 +338,12 @@ void initialise_http(void)
 {
     xMutex_Http_Send = xSemaphoreCreateMutex(); //创建HTTP发送互斥信号
     Binary_Http_Send = xSemaphoreCreateBinary();
-    xEventGroupClearBits(wifi_event_group, ACTIVED_BIT);
-    while (http_activate() < 0) //激活
-    {
-        ESP_LOGE(TAG, "activate fail\n");
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-    }
-    xEventGroupSetBits(wifi_event_group, ACTIVED_BIT);
+    //xEventGroupClearBits(wifi_event_group, ACTIVED_BIT);
+    //while (http_activate() < 0) //激活
+    // {
+    //  ESP_LOGE(TAG, "activate fail\n");
+    //vTaskDelay(2000 / portTICK_PERIOD_MS);
+    // }
+    // xEventGroupSetBits(wifi_event_group, ACTIVED_BIT);
     xTaskCreate(&http_get_task, "http_get_task", 8192, NULL, 6, &httpHandle);
 }

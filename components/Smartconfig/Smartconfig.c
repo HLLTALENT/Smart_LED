@@ -21,6 +21,7 @@
 #include "Bluetooth.h"
 #include "Json_parse.h"
 #include "tcp_bsp.h"
+#include "Http.h"
 
 #define TAG "User_Wifi" //打印的tag
 
@@ -98,31 +99,58 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
     return ESP_OK;
 }
 
-void initialise_wifi(void) //(char *wifi_ssid, char *wifi_password)
+void initialise_wifi(char *wifi_ssid, char *wifi_password)
 {
-    //Led_Status = LED_STA_WIFIERR; //断网
-    xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
-    esp_wifi_connect();
+    printf("WIFI Reconnect,SSID=%s,PWD=%s\r\n", wifi_ssid, wifi_password);
 
-    ESP_ERROR_CHECK(esp_wifi_stop());
     ESP_ERROR_CHECK(esp_wifi_get_config(ESP_IF_WIFI_STA, &s_staconf));
-
-    if (s_staconf.sta.ssid[0] != '\0') //判断当前系统中是否有WIFI信息,
+    if (s_staconf.sta.ssid[0] == '\0')
     {
-        memset(&s_staconf.sta, 0, sizeof(s_staconf)); //清空原有数据
-    }
-    strcpy((char *)s_staconf.sta.ssid, wifi_data.wifi_ssid);
-    strcpy((char *)s_staconf.sta.password, wifi_data.wifi_pwd);
+        //ESP_ERROR_CHECK(esp_wifi_get_config(ESP_IF_WIFI_STA, &s_staconf));
+        strcpy((char *)s_staconf.sta.ssid, wifi_ssid);
+        strcpy((char *)s_staconf.sta.password, wifi_password);
 
-    if (start_AP == 1) //如果是从AP模式进入，则需要重新设置为STA模式
+        ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &s_staconf));
+        ESP_ERROR_CHECK(esp_wifi_start());
+        esp_wifi_connect();
+    }
+    else
     {
-        start_AP = 0;
-        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+        ESP_ERROR_CHECK(esp_wifi_stop());
+        memset(&s_staconf.sta, 0, sizeof(s_staconf));
+        //printf("WIFI CHANGE\r\n");
+        strcpy((char *)s_staconf.sta.ssid, wifi_ssid);
+        strcpy((char *)s_staconf.sta.password, wifi_password);
+        ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &s_staconf));
+        ESP_ERROR_CHECK(esp_wifi_start());
+        esp_wifi_connect();
     }
+    /*else if (strcmp(wifi_ssid, s_staconf.sta.ssid) == 0 && strcmp(wifi_password, s_staconf.sta.password) == 0)
+    {
 
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &s_staconf));
-    ESP_ERROR_CHECK(esp_wifi_start());
-    esp_wifi_connect();
+        if (wifi_con_sta == connect_Y)
+        {
+            printf("ALREADY CONNECT \r\n");
+        }
+        else
+        {
+            printf("WIFI NO CHANGE\r\n");
+            ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &s_staconf));
+            ESP_ERROR_CHECK(esp_wifi_start());
+            esp_wifi_connect();
+        }
+    }
+    else if (strcmp(wifi_ssid, s_staconf.sta.ssid) != 0 || strcmp(wifi_password, s_staconf.sta.password) != 0)
+    {
+        ESP_ERROR_CHECK(esp_wifi_stop());
+        memset(&s_staconf.sta, 0, sizeof(s_staconf));
+        printf("WIFI CHANGE\r\n");
+        strcpy(s_staconf.sta.ssid, wifi_ssid);
+        strcpy(s_staconf.sta.password, wifi_password);
+        ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &s_staconf));
+        ESP_ERROR_CHECK(esp_wifi_start());
+        esp_wifi_connect();
+    }*/
 }
 
 void reconnect_wifi_usr(void)

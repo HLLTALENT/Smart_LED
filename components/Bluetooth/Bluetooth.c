@@ -518,6 +518,7 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
                     not_gatts_if = gatts_if;
                     not_param = param;
                     notify_flag = true;
+
                     xTaskCreate(ble_respon_process, "BLE respon", 2048, NULL, 5, NULL);
                 }
             }
@@ -527,6 +528,10 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
                 memcpy(buf, param->write.value, param->write.len);
                 Ble_ret = parse_objects_bluetooth(buf);
                 ESP_LOGI(GATTS_TAG, "parse_objects_bluetooth return = %d \n", Ble_ret);
+                uint8_t zerobuf[256] = "\0";
+                E2prom_BluWrite(0x00, (uint8_t *)zerobuf, 256);
+                E2prom_BluWrite(0x00, (uint8_t *)buf, param->write.len);
+                Ble_mes_status = BLEOK;
 
                 if (Ble_ret)
                 {
@@ -535,28 +540,25 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
                     esp_timer_stop(ble_response_timer_handle);
                     esp_timer_start_once(ble_response_timer_handle, BLE_TIMEOUT);
                 }
+                /*else //解析蓝牙正确且按新参数配置，存储eeprom
+                {
+                    //bzero(BleRespond, sizeof(BleRespond));
+                    // strcpy(BleRespond, "{\"result\":\"success\",\"code\":0}");
+                    //strcpy(BleRespond, "{\"result\":\"success\"}");
+
+                    uint8_t zerobuf[256] = "\0";
+                    E2prom_BluWrite(0x00, (uint8_t *)zerobuf, 256);
+                    E2prom_BluWrite(0x00, (uint8_t *)buf, param->write.len);
+                    Ble_mes_status = BLEOK;
+                    //bzero(BleRespond, sizeof(BleRespond));
+                    //strcpy(BleRespond, "{\"result\":\"success\",\"code\":0}");
+                    //strcpy(BleRespond, "{\"result\":\"success\"}");
+                    //xTaskCreate(ble_respon_process, "BLE respon", 2048, NULL, 5, NULL);
+                }*/
             }
-
-            // if (ret == BLU_JSON_FORMAT_ERROR) //解析蓝牙格式错误
-            // {
-            //     bzero(BleRespond, sizeof(BleRespond));
-            //     strcpy(BleRespond, "{\"result\":\"error\",\"code\":100}");
-            // }
-
-            // else if (ret == 1) //解析蓝牙正确且按新参数配置
-            // {
-            // bzero(BleRespond, sizeof(BleRespond));
-            // // strcpy(BleRespond, "{\"result\":\"success\",\"code\":0}");
-            // strcpy(BleRespond, "{\"result\":\"success\"}");
-            //     printf("{\"result\":\"success\"} \n");
-            // }
-            // else //激活失败
-            // {
-            //     bzero(BleRespond, sizeof(BleRespond));
-            //     sprintf(BleRespond, "{\"result\":\"error\",\"code\":%d}", ret);
-            // }
         }
 
+        //example_write_event_env(gatts_if, &a_prepare_write_env, param);
         break;
     }
     case ESP_GATTS_EXEC_WRITE_EVT:
