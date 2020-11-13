@@ -432,10 +432,19 @@ void app_main(void)
         {
             printf("no ApiKey or channelId!\n");
 
-            while (http_activate() == 0) //激活失败
+            //need_reactivate = 1;
+            xEventGroupClearBits(wifi_event_group, ACTIVED_BIT);
+            while (http_activate() < 0) //激活
             {
-                vTaskDelay(10000 / portTICK_RATE_MS);
+                //ESP_LOGE(TAG, "activate fail\n");
+                printf("activate fail\n");
+                vTaskDelay(2000 / portTICK_PERIOD_MS);
             }
+            xEventGroupSetBits(wifi_event_group, ACTIVED_BIT);
+            //while (http_activate() == 0) //激活失败
+            //{
+            //  vTaskDelay(10000 / portTICK_RATE_MS);
+            //}
 
             //激活成功
             E2prom_Read(0x00, (uint8_t *)ApiKey, 32);
