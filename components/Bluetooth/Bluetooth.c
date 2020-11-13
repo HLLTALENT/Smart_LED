@@ -469,7 +469,7 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
         }
         else
         {
-            if ((xEventGroupGetBits(wifi_event_group) & ACTIVED_BIT) == ACTIVED_BIT) //网络连接成功
+            if (((xEventGroupGetBits(wifi_event_group) & ACTIVED_BIT) == ACTIVED_BIT) || (Ble_ret != 0)) //网络连接成功
             {
                 // bzero(BleRespond, sizeof(BleRespond));
                 strcpy(BleRespond, "{\"result\":\"success\"}");
@@ -528,12 +528,18 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
                 memcpy(buf, param->write.value, param->write.len);
                 Ble_ret = parse_objects_bluetooth(buf);
                 ESP_LOGI(GATTS_TAG, "parse_objects_bluetooth return = %d \n", Ble_ret);
-                uint8_t zerobuf[256] = "\0";
-                E2prom_BluWrite(0x00, (uint8_t *)zerobuf, 256);
-                E2prom_BluWrite(0x00, (uint8_t *)buf, param->write.len);
-                Ble_mes_status = BLEOK;
 
-                if (Ble_ret)
+                if (Ble_ret != 0)
+                {
+                    uint8_t zerobuf[256] = "\0";
+                    E2prom_BluWrite(0x00, (uint8_t *)zerobuf, 256);
+                    E2prom_BluWrite(0x00, (uint8_t *)buf, param->write.len);
+                    Ble_mes_status = BLEOK;
+                    bzero(BleRespond, sizeof(BleRespond));
+                    strcpy(BleRespond, "{\"result\":\"success\"}");
+                }
+
+                else // if (Ble_ret)
                 {
                     // ble_resp_flag = false;
                     xEventGroupClearBits(wifi_event_group, BLE_RESP_BIT);
